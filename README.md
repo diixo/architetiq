@@ -1,1 +1,1 @@
-# architetiq
+# architetIQ
