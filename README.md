@@ -1,1 +1,3 @@
 # architetIQ
+
+Adaptation for archimatetool
