@@ -472,57 +472,57 @@ Created by: Alexander Efremov (alexander.efremoff@gmail.com)</div>
     </div>
   </main>
 
-    <!-- Tree toggle script -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        function strcmp(a, b) {
-          var aText = a.textContent.trim().toLowerCase();
-          var bText = b.textContent.trim().toLowerCase();
-          if (aText < bText) return -1;
-          if (aText > bText) return 1;
-          return 0;
-        }
+  <!-- Tree toggle script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      function strcmp(a, b) {
+        var aText = a.textContent.trim().toLowerCase();
+        var bText = b.textContent.trim().toLowerCase();
+        if (aText < bText) return -1;
+        if (aText > bText) return 1;
+        return 0;
+      }
 
-        function sortChildren(ul) {
-          var folders = Array.from(ul.querySelectorAll(':scope > li.tree-folder'));
-          var elements = Array.from(ul.querySelectorAll(':scope > li.tree-element'));
-          folders.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
-          elements.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
-        }
+      function sortChildren(ul) {
+        var folders = Array.from(ul.querySelectorAll(':scope > li.tree-folder'));
+        var elements = Array.from(ul.querySelectorAll(':scope > li.tree-element'));
+        folders.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+        elements.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+      }
 
-        // Setup: add parent_li to any li with child ul, hide direct children
-        document.querySelectorAll('.tree li').forEach(function(li) {
-          if (li.querySelector(':scope > ul')) {
-            li.classList.add('parent_li');
-            li.querySelectorAll(':scope > ul > li').forEach(function(child) {
-              child.style.display = 'none';
-            });
-          }
-        });
-
-        // Click handler
-        document.querySelectorAll('.tree li.parent_li > span, .tree li.tree-folder > span').forEach(function(toggler) {
-          toggler.addEventListener('click', function(e) {
-            var li = this.closest('li');
-            var childUl = li.querySelector(':scope > ul');
-            if (!childUl) return;
-
-            var children = childUl.children;
-            var isOpen = li.classList.contains('open');
-
-            if (isOpen) {
-              for (var i = 0; i < children.length; i++) children[i].style.display = 'none';
-              li.classList.remove('open');
-            } else {
-              sortChildren(childUl);
-              for (var i = 0; i < children.length; i++) children[i].style.display = '';
-              li.classList.add('open');
-            }
-            e.stopPropagation();
+      // Setup: add parent_li to any li with child ul, hide direct children
+      document.querySelectorAll('.tree li').forEach(function(li) {
+        if (li.querySelector(':scope > ul')) {
+          li.classList.add('parent_li');
+          li.querySelectorAll(':scope > ul > li').forEach(function(child) {
+            child.style.display = 'none';
           });
+        }
+      });
+
+      // Click handler
+      document.querySelectorAll('.tree li.parent_li > span, .tree li.tree-folder > span').forEach(function(toggler) {
+        toggler.addEventListener('click', function(e) {
+          var li = this.closest('li');
+          var childUl = li.querySelector(':scope > ul');
+          if (!childUl) return;
+
+          var children = childUl.children;
+          var isOpen = li.classList.contains('open');
+
+          if (isOpen) {
+            for (var i = 0; i < children.length; i++) children[i].style.display = 'none';
+            li.classList.remove('open');
+          } else {
+            sortChildren(childUl);
+            for (var i = 0; i < children.length; i++) children[i].style.display = '';
+            li.classList.add('open');
+          }
+          e.stopPropagation();
         });
       });
-    </script>
+    });
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
