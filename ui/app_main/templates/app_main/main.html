@@ -1,0 +1,535 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bootstrap Horizontal Menu Example</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <!-- Bootstrap Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  >
+
+  <style>
+    :root {
+      --app-border: #dee2e6;
+      --app-muted-bg: #f8f9fa;
+      --app-menu-active-bg: #e7f1ff;
+      --app-menu-active-color: #0d6efd;
+    }
+
+    body {
+      background: #ffffff;
+    }
+
+    .app-header {
+      background: linear-gradient(180deg, #f0f0f0 0%, #e6e6e6 100%);
+      border-bottom: 1px solid var(--app-border);
+      border-top: 1px solid var(--app-border);
+    }
+
+    .horizontal-menu-wrapper {
+      background: #ffffff;
+      border-bottom: 1px solid var(--app-border);
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+    }
+
+    .horizontal-menu {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: thin;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      font-size: 0.875rem;
+    }
+
+    .horizontal-menu::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .horizontal-menu::-webkit-scrollbar-thumb {
+      background: #ced4da;
+      border-radius: 999px;
+    }
+
+    .horizontal-menu .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #495057;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 10px;
+      transition: background-color .15s ease, color .15s ease;
+    }
+
+    .horizontal-menu .nav-link:hover {
+      color: #0d6efd;
+      background: #f1f3f5;
+    }
+
+    .horizontal-menu .nav-link.active {
+      color: var(--app-menu-active-color);
+      background: var(--app-menu-active-bg);
+    }
+
+    .horizontal-menu .badge {
+      font-weight: 500;
+      border-radius: 999px;
+    }
+
+    .app-layout {
+      height: calc(100vh - 90px);
+    }
+
+    ul.tree, ul.tree ul {
+      list-style: none;
+      padding-left: 1.25rem;
+      margin: 0;
+    }
+
+    ul.tree { padding-left: 0; }
+
+    .tree .parent_li > span,
+    .tree .tree-folder > span {
+      cursor: pointer;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+
+    .tree .parent_li > span:hover,
+    .tree .tree-folder > span:hover {
+      color: #0d6efd;
+    }
+
+    .tree .parent_li > span > i,
+    .tree .tree-folder > span > i {
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+
+    .tree .parent_li.open > span > i,
+    .tree .tree-folder.open > span > i {
+      transform: rotate(90deg);
+    }
+
+    .tree a {
+      text-decoration: none;
+      color: #495057;
+      font-size: 0.85rem;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .tree a:hover {
+      color: #0d6efd;
+      background: #f1f3f5;
+    }
+
+    /* Panel styles adapted from BS3 panel-default */
+    .panel {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    }
+    .panel-heading {
+      padding: 10px 15px;
+      background-color: #f5f5f5;
+      background-image: linear-gradient(to bottom, #f5f5f5 0, #e8e8e8 100%);
+      background-repeat: repeat-x;
+      border-bottom: 1px solid #ddd;
+      border-radius: 3px 3px 0 0;
+      font-size: 0.875rem;
+    }
+    .panel-body {
+      padding: 15px;
+    }
+    .root-panel {
+      height: 100%;
+      overflow: hidden;
+    }
+    .root-panel-body {
+      overflow: auto;
+    }
+
+    @media (max-width: 576px) {
+      .horizontal-menu .nav-link {
+        padding: 9px 12px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="py-2" style="padding-left: 1.75rem; padding-right: 1.75rem;">
+
+      <div class="d-flex align-items-center gap-3">
+        <div class="fw-bold my-0" style="font-size: 1.25rem;">
+          <span style="color: #343a40;">architet</span><span style="color: #712cf9;">IQ</span>
+        </div>
+
+        <div class="flex-grow-1">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <!--<h6 class="mb-0">v0.0</h6>-->
+            <span class="badge text-bg-light border">v0.0</span>
+          </div>
+        </div>
+
+        <button
+          class="btn btn-light border d-md-none"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mobileMenu"
+          aria-controls="mobileMenu"
+          aria-expanded="false"
+          aria-label="Toggle menu"
+        >
+          <i class="bi bi-list" style="font-size: 1.25rem; -webkit-text-stroke: 0.5px;"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile dropdown menu -->
+  <div class="collapse d-md-none border-bottom" id="mobileMenu">
+    <nav class="px-3 py-2 bg-white">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link active" href="#">
+            <i class="bi bi-house-door me-2"></i>Overview
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-list-check me-2"></i>Requirements
+            <span class="badge text-bg-secondary ms-1">24</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-diagram-3 me-2"></i>Architecture
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-kanban me-2"></i>Scenarios
+            <span class="badge text-bg-secondary ms-1">8</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-bug me-2"></i>Issues
+            <span class="badge text-bg-secondary ms-1">3</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-shield-check me-2"></i>Compliance
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-bar-chart me-2"></i>Reports
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-gear me-2"></i>Settings
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Horizontal menu (desktop) -->
+  <nav class="horizontal-menu-wrapper d-none d-md-block">
+    <div class="container-fluid px-0">
+      <ul class="nav horizontal-menu flex-nowrap px-3 px-md-3">
+        <li class="nav-item">
+          <a class="nav-link active" href="#">
+            <i class="bi bi-house-door"></i>
+            Overview
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-list-check"></i>
+            Requirements
+            <span class="badge text-bg-secondary">24</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-diagram-3"></i>
+            Architecture
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-kanban"></i>
+            Scenarios
+            <span class="badge text-bg-secondary">8</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-bug"></i>
+            Issues
+            <span class="badge text-bg-secondary">3</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-shield-check"></i>
+            Compliance
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-bar-chart"></i>
+            Reports
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-gear"></i>
+            Settings
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="app-layout d-flex bg-dark-subtle">
+    <!-- Sidebar: Tree + Element detail -->
+    <div class="d-flex flex-column" style="width: 350px; min-width: 250px;">
+      <!-- Tree panel -->
+      <div class="panel root-panel flex-grow-1">
+        <div class="panel-heading">
+          <b>Model Tree</b>
+        </div>
+        <div class="panel-body root-panel-body p-2">
+            <b>
+              <a href="#" class="text-decoration-none text-dark">ASPICE</a>
+            </b>
+            <ul class="tree ms-3" style="font-size: 0.875rem;">
+              <li>
+                <span>
+                  <i class="bi bi-caret-right-fill"></i> Model Content</span>
+                <ul>
+                  <li><span><i class="bi bi-caret-right-fill"></i> Strategy</span>
+                    <ul>
+                    </ul>
+                  </li>
+                  <li><span><i class="bi bi-caret-right-fill"></i> Business</span>
+                    <ul>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/5f16ba74-2d83-4461-9125-aa6f3114407c.html">SWE.1 Software Requirements Analysis</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/989fd6d3-9664-464c-a1d4-2a73076d8e8f.html">SWE.2 Software Architectural Design</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/a3809e46-4878-4b2d-be33-c3a6438c58b6.html">SWE.3 Software Detailed Design and Unit Construction</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/15db161b-3d65-4e8f-a5f5-af0d145bf8ff.html">SWE.4 Software Unit Verification</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/ce37a6a9-ffaa-4208-b40e-c970d9b6069e.html">SWE.5 Software Integration and Integration Test</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/a9cacbed-b90c-4693-80cc-8f1926fb1c8b.html">SWE.6 Software Qualification Test</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/d65e77dc-10bd-4b80-82ca-7172ae318f4d.html">SYS.2 System Requirements Analysis</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/85958416-de8c-4475-941b-eeaaff5eeed9.html">SYS.3 System Architectural Design</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/97098392-5cad-4e12-a470-98cb780464cc.html">MAN.3 Project Management</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/36ac73d7-fffc-4af6-a5fc-e5350996d5b0.html">SUP.8 Configuration Management</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/072bd3c8-d354-401c-a8e4-d358b7053358.html">SUP.9 Problem Resolution Management</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/728b74f3-59aa-422b-8fff-a78a0c13e17a.html">SUP.1 Quality Assurance</a></li>
+                    </ul>
+                  </li>
+                  <li><span><i class="bi bi-caret-right-fill"></i> Application</span>
+                    <ul>
+                    </ul>
+                  </li>
+                  <li><span><i class="bi bi-caret-right-fill"></i> Technology &amp; Physical</span>
+                    <ul>
+                    </ul>
+                  </li>
+                  <li><span><i class="bi bi-caret-right-fill"></i> Motivation</span>
+                    <ul>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/006cac41-4164-483a-97f9-5214f429af55.html">MAN.3.O.4 Interfaces within the project</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/00e08590-b3f4-48a4-9ede-89e520f35b9b.html">MAN.3.O.3 The activities and resources necessary</a></li>
+                      <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/elements/0223923b-95f6-447e-adcc-bfc6f31e95b3.html">ACQ.15.O.4 Any shortfalls in capability</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><span><i class="bi bi-caret-right-fill"></i> Views</span>
+                <ul>
+                  <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SPL Supply Process Group</span>
+                    <ul>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SPL.2 Product Release</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/a6fe27f8-ff18-4f12-8ec5-fd4e9acc1a46.html">Overview - SPL.2 Product Release</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/1924754a-e2b4-4b1f-b118-1b725d9688c7.html">O. vs. BP. vs. WP. - SPL.2 Product Release</a></li>
+                        </ul>
+                      </li>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SPL.1 Supplier Tendering</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/5cbd0b21-14ab-4aa1-8ecd-a6680caa279e.html">Overview - SPL.1 Supplier Tendering</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/5f0b0f47-afbf-41af-8705-bcf5dc2da78a.html">O. vs. BP. vs. WP. - SPL.1 Supplier Tendering</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SWE Software Engineering Process Group</span>
+                    <ul>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SWE.1 Software Requirements Analysis</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/93fd1303-359e-41aa-9ae3-d25fac269c97.html">Overview - SWE.1 Software Requirements Analysis</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/73004618-6d8c-4773-aae0-afb94660d0ed.html">O. vs. BP. vs. WP. - SWE.1 Software Requirements Analysis</a></li>
+                        </ul>
+                      </li>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SWE.2 Software Architectural Design</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/d0bb5cf3-6c15-42ca-ac8c-4dda7e98c01f.html">Overview - SWE.2 Software Architectural Design</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/d2e8c3d8-1a58-48e3-a1d2-7503c6952795.html">O. vs. BP. vs. WP. - SWE.2 Software Architectural Design</a></li>
+                        </ul>
+                      </li>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> SWE.3 Software Detailed Design and Unit Construction</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/e322a87e-008e-463b-82d9-c828d71fc993.html">Overview - SWE.3</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/6bfb7a3a-af90-403b-8d44-7254906ef659.html">O. vs. BP. vs. WP. - SWE.3</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> MAN Management Process Group</span>
+                    <ul>
+                      <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> MAN.3 Project Management</span>
+                        <ul>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/24e39b5f-7472-4204-8f22-7dab9accf917.html">Overview - MAN.3 Project Management</a></li>
+                          <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/37245f6b-56a6-493d-9b23-5a727439148a.html">O. vs. BP. vs. WP. - MAN.3 Project Management</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/9e94f80f-8775-4044-8110-6a872c99ec05.html">Overview - Process Reference Model</a></li>
+                  <li class="tree-element"><a href="ASPICE-Archi-gh-pages/0c6fbcf4-57de-4e25-a1b4-d9a0fa460c16/views/aa2307df-b861-4aec-b9ee-91404cb69806.html">Overview - Extended</a></li>
+                </ul>
+              </li>
+            </ul>
+        </div>
+      </div>
+      <!-- Element detail -->
+      <div class="panel overflow-auto" style="height: 250px; border-top: 1px solid #ddd; border-radius: 0;">
+        <div class="panel-body d-flex align-items-center justify-content-center h-100">
+          <p class="text-muted text-center mb-0">Select an element in the model tree or in a view to show its details here</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-grow-1 overflow-auto">
+      <div class="panel root-panel">
+        <div class="panel-heading"><b>ASPICE</b></div>
+        <div class="panel-body root-panel-body">
+          <ul class="nav nav-tabs mb-3" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#purpose" type="button" role="tab">Purpose</button>
+            </li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane active" id="purpose" role="tabpanel" style="white-space: pre-wrap;">This model contains process descriptions from the Automotive SPICE Standard v.3.1.
+All views are contained in the "Views" section (selectable in the model tree on the left side).
+
+Views are sorted according to ASPICE process groups.
+
+There are three types of views:
+- process reference model view (overview of all the processes in ASPICE process reference model);
+- overview of a process description (contains base practices, outcomes and work products for a process);
+- specification outcomes relations to base practices and work products for a process.
+
+Source of information for this model is Automotive SPICE Standard v.3.1
+(http://www.automotivespice.com/fileadmin/software-download/AutomotiveSPICE_PAM_31.pdf)
+
+Created by: Alexander Efremov (alexander.efremoff@gmail.com)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+    <!-- Tree toggle script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        function strcmp(a, b) {
+          var aText = a.textContent.trim().toLowerCase();
+          var bText = b.textContent.trim().toLowerCase();
+          if (aText < bText) return -1;
+          if (aText > bText) return 1;
+          return 0;
+        }
+
+        function sortChildren(ul) {
+          var folders = Array.from(ul.querySelectorAll(':scope > li.tree-folder'));
+          var elements = Array.from(ul.querySelectorAll(':scope > li.tree-element'));
+          folders.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+          elements.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+        }
+
+        // Setup: add parent_li to any li with child ul, hide direct children
+        document.querySelectorAll('.tree li').forEach(function(li) {
+          if (li.querySelector(':scope > ul')) {
+            li.classList.add('parent_li');
+            li.querySelectorAll(':scope > ul > li').forEach(function(child) {
+              child.style.display = 'none';
+            });
+          }
+        });
+
+        // Click handler
+        document.querySelectorAll('.tree li.parent_li > span, .tree li.tree-folder > span').forEach(function(toggler) {
+          toggler.addEventListener('click', function(e) {
+            var li = this.closest('li');
+            var childUl = li.querySelector(':scope > ul');
+            if (!childUl) return;
+
+            var children = childUl.children;
+            var isOpen = li.classList.contains('open');
+
+            if (isOpen) {
+              for (var i = 0; i < children.length; i++) children[i].style.display = 'none';
+              li.classList.remove('open');
+            } else {
+              sortChildren(childUl);
+              for (var i = 0; i < children.length; i++) children[i].style.display = '';
+              li.classList.add('open');
+            }
+            e.stopPropagation();
+          });
+        });
+      });
+    </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
