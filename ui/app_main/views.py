@@ -273,17 +273,146 @@ def api_model(request):
     return JsonResponse(_load_model())
 
 
+# ── Diagram visual data ───────────────────────────────────────────────────────
+
+def _build_elements_index(model):
+    """Flat id → {name, element_type} for all elements/views in the model tree."""
+    index = {}
+    def walk(node):
+        nid = node.get('id')
+        if nid and node.get('type') in ('element', 'view'):
+            index[nid] = {
+                'name': node.get('name', ''),
+                'element_type': node.get('element_type', ''),
+            }
+        for child in node.get('children', []):
+            walk(child)
+    walk(model)
+    return index
+
+
+def _find_diagram_file(view_id):
+    diagrams_dir = os.path.join(_GRAFICO_DIR, 'diagrams')
+    if not os.path.isdir(diagrams_dir):
+        return None
+    for dirpath, _, filenames in os.walk(diagrams_dir):
+        for fname in filenames:
+            if view_id in fname and fname.endswith('.xml') and fname != 'folder.xml':
+                return os.path.join(dirpath, fname)
+    return None
+
+
+def _parse_diagram_file(xml_path, elements_index):
+    root = ET.parse(xml_path).getroot()
+    nodes, edges = [], []
+
+    def get_bounds(elem):
+        for child in elem:
+            if _local(child.tag) == 'bounds':
+                return (
+                    int(child.get('x', 0)), int(child.get('y', 0)),
+                    int(child.get('width', 120)), int(child.get('height', 55)),
+                )
+        return 0, 0, 120, 55
+
+    def resolve_href(href):
+        eid = href.split('#')[-1] if '#' in href else ''
+        info = elements_index.get(eid, {})
+        return eid, info.get('name', eid), info.get('element_type', '')
+
+    def parse_child(elem, px=0, py=0):
+        xsi_type = elem.get(_XSI_TYPE, '')
+        obj_type = xsi_type.split(':')[-1] if ':' in xsi_type else xsi_type
+        oid = elem.get('id', '')
+        bx, by, bw, bh = get_bounds(elem)
+        ax, ay = px + bx, py + by
+
+        for sub in elem:
+            stag = _local(sub.tag)
+            if stag in ('sourceConnection', 'sourceConnections'):
+                ct = sub.get(_XSI_TYPE, '').split(':')[-1]
+                edges.append({
+                    'id': sub.get('id', ''),
+                    'type': ct,
+                    'source': sub.get('source', ''),
+                    'target': sub.get('target', ''),
+                })
+
+        if obj_type == 'DiagramModelGroup':
+            for sub in elem:
+                if _local(sub.tag) == 'children':
+                    parse_child(sub, ax, ay)
+            nodes.append({
+                'id': oid, 'type': 'group',
+                'name': elem.get('name', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+                'fill_color': elem.get('fillColor', '#f5f5f5'),
+            })
+
+        elif obj_type == 'DiagramModelArchimateObject':
+            eid, ename, etype = '', '', ''
+            for sub in elem:
+                if _local(sub.tag) == 'archimateElement':
+                    eid, ename, etype = resolve_href(sub.get('href', ''))
+                    break
+            nodes.append({
+                'id': oid, 'type': 'element',
+                'name': ename, 'element_id': eid, 'element_type': etype,
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            })
+
+        elif obj_type == 'DiagramModelNote':
+            nodes.append({
+                'id': oid, 'type': 'note',
+                'name': elem.get('content', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            })
+
+        elif obj_type == 'DiagramModelReference':
+            ref_id = ''
+            for sub in elem:
+                if _local(sub.tag) == 'referencedModel':
+                    ref_id = sub.get('href', '').split('#')[-1]
+            nodes.append({
+                'id': oid, 'type': 'view_ref',
+                'name': '', 'ref_id': ref_id,
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            })
+
+    for child in root:
+        if _local(child.tag) == 'children':
+            parse_child(child)
+
+    return {
+        'id': root.get('id', ''),
+        'name': root.get('name', ''),
+        'documentation': root.get('documentation', ''),
+        'nodes': nodes,
+        'edges': edges,
+    }
+
+
 def api_diagram(request, view_id):
-    def find_node(node, target_id):
-        if node.get('id') == target_id:
+    model = _load_model()
+    diagram_file = _find_diagram_file(view_id)
+    if diagram_file:
+        try:
+            data = _parse_diagram_file(diagram_file, _build_elements_index(model))
+            return JsonResponse(data)
+        except ET.ParseError as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    # Fallback: basic info from model tree
+    def find_node(node, tid):
+        if node.get('id') == tid:
             return node
         for child in node.get('children', []):
-            found = find_node(child, target_id)
+            found = find_node(child, tid)
             if found:
                 return found
         return None
 
-    node = find_node(_load_model(), view_id)
+    node = find_node(model, view_id)
     if node is None:
         return JsonResponse({'error': 'Not found'}, status=404)
     return JsonResponse(node)
