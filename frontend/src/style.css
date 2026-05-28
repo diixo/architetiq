@@ -75,7 +75,8 @@ html, body { height: 100%; margin: 0; }
 .palette-grid {
   display: grid;
   grid-template-columns: repeat(3, 16px);
-  gap: 3px;
+  row-gap: 3px;
+  column-gap: 8px;
   padding: 2px 0 4px 0;
 }
 
@@ -159,11 +160,9 @@ html, body { height: 100%; margin: 0; }
   justify-content: center;
   width: 16px; height: 16px;
   border-radius: 2px;
-  border: 1px solid #ccc;
   cursor: grab;
-  box-sizing: border-box;
 }
-.palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-color: #0d6efd; }
+.palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-radius: 2px; }
 .palette-type-icon:active { cursor: grabbing; }
 
 /* Context menu */

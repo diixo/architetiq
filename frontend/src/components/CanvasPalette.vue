@@ -18,7 +18,6 @@
             class="palette-type-icon"
             draggable="true"
             :title="humanizeType(et)"
-            :style="{ background: nodeColor(et) }"
             @dragstart="onDragStart($event, et, layer.folder_type)"
           >
             <img
