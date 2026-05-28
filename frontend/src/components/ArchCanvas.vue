@@ -187,16 +187,13 @@ function renderDiagram() {
       const iconId = ELEMENT_ICON[n.element_type]
       const dashed = PASSIVE_TYPES.has(n.element_type)
       const iconSize = 13
-      // Embedded in another element → use relative coords + X6 parent
-      const parentNode = n.parent_id ? nodeMap[n.parent_id] : null
-      const nodeX = parentNode ? n.x - parentNode.x : n.x
-      const nodeY = parentNode ? n.y - parentNode.y : n.y
+      // Embedded elements drawn ON TOP of parent (zIndex: 2), like Archi's Draw2D layer order
+      const zIdx = n.parent_id ? 2 : 1
       graph.addNode({
         id: n.id,
-        x: nodeX, y: nodeY,
+        x: n.x, y: n.y,           // always absolute coordinates
         width: n.width, height: n.height,
-        ...(n.parent_id ? { parent: n.parent_id } : {}),
-        zIndex: 1,
+        zIndex: zIdx,
         markup: ELEMENT_MARKUP,
         data: { type: 'element', element_id: n.element_id,
                 element_type: n.element_type, name: n.name, id: n.element_id },
