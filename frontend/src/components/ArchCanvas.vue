@@ -2,19 +2,26 @@
   <div class="panel root-panel h-100 d-flex flex-column">
     <div class="panel-heading d-flex align-items-center gap-2">
       <b>{{ title }}</b>
-      <span v-if="currentView" class="badge text-bg-light border ms-auto" style="font-size: 0.7rem;">
-        {{ currentView.element_type || 'View' }}
-      </span>
+      <span v-if="loading" class="text-muted ms-1" style="font-size:0.75rem;">Loading…</span>
+      <div class="ms-auto d-flex gap-1" v-if="diagramData">
+        <button class="btn btn-sm btn-light border py-0 px-1" title="Fit" @click="fitView">
+          <i class="bi bi-fullscreen" style="font-size:0.75rem;"></i>
+        </button>
+        <button class="btn btn-sm btn-light border py-0 px-1" title="Reset zoom" @click="resetZoom">
+          <i class="bi bi-zoom-out" style="font-size:0.75rem;"></i>
+        </button>
+      </div>
     </div>
-    <div class="panel-body root-panel-body flex-grow-1 position-relative p-0" style="overflow: hidden;">
+
+    <div class="flex-grow-1 position-relative" style="overflow:hidden;">
       <div ref="containerRef" class="w-100 h-100"></div>
       <div
-        v-if="!currentView"
+        v-if="!diagramData && !loading"
         class="position-absolute top-50 start-50 translate-middle text-center text-muted"
-        style="pointer-events: none;"
+        style="pointer-events:none;"
       >
-        <i class="bi bi-diagram-3" style="font-size: 2.5rem; opacity: 0.2;"></i>
-        <p class="mt-2 mb-0" style="font-size: 0.875rem;">Select a view from the model tree</p>
+        <i class="bi bi-diagram-3" style="font-size:2.5rem;opacity:0.2;"></i>
+        <p class="mt-2 mb-0" style="font-size:0.875rem;">Select a view from the model tree</p>
       </div>
     </div>
   </div>
@@ -25,72 +32,181 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Graph } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 
-const store = useModelStore()
+const store   = useModelStore()
 const containerRef = ref(null)
+const diagramData  = ref(null)
+const loading      = ref(false)
 let graph = null
+let resizeObserver = null
 
-const currentView = computed(() =>
-  store.selected?.type === 'view' ? store.selected : null
+const title = computed(() =>
+  diagramData.value?.name || store.model?.name || 'Canvas'
 )
-const title = computed(() => currentView.value?.name || store.model?.name || 'Canvas')
 
+// ── ArchiMate layer colours (Archi defaults) ─────────────────────────────────
+const LAYER_COLOR = {
+  // Business
+  BusinessActor:'#ffffb5', BusinessRole:'#ffffb5', BusinessCollaboration:'#ffffb5',
+  BusinessInterface:'#ffffb5', BusinessFunction:'#ffffb5', BusinessProcess:'#ffffb5',
+  BusinessInteraction:'#ffffb5', BusinessEvent:'#ffffb5', BusinessService:'#ffffb5',
+  BusinessObject:'#ffffb5', Contract:'#ffffb5', Representation:'#ffffb5',
+  Product:'#ffffb5',
+  // Application
+  ApplicationComponent:'#b5ffff', ApplicationCollaboration:'#b5ffff',
+  ApplicationInterface:'#b5ffff', ApplicationFunction:'#b5ffff',
+  ApplicationInteraction:'#b5ffff', ApplicationProcess:'#b5ffff',
+  ApplicationEvent:'#b5ffff', ApplicationService:'#b5ffff', DataObject:'#b5ffff',
+  // Technology
+  Node:'#b5ffb5', Device:'#b5ffb5', SystemSoftware:'#b5ffb5',
+  TechnologyCollaboration:'#b5ffb5', TechnologyInterface:'#b5ffb5',
+  TechnologyFunction:'#b5ffb5', TechnologyInteraction:'#b5ffb5',
+  TechnologyProcess:'#b5ffb5', TechnologyEvent:'#b5ffb5',
+  TechnologyService:'#b5ffb5', Artifact:'#b5ffb5',
+  CommunicationNetwork:'#b5ffb5', Path:'#b5ffb5',
+  Equipment:'#b5ffb5', Facility:'#b5ffb5', Material:'#b5ffb5',
+  // Motivation
+  Stakeholder:'#ccccff', Driver:'#ccccff', Assessment:'#ccccff',
+  Goal:'#ccccff', Outcome:'#ccccff', Principle:'#ccccff',
+  Requirement:'#ccccff', Constraint:'#ccccff', Meaning:'#ccccff', Value:'#ccccff',
+  // Implementation & Migration
+  WorkPackage:'#ffe0e0', Deliverable:'#ffe0e0', ImplementationEvent:'#ffe0e0',
+  Plateau:'#ffe0e0', Gap:'#ffe0e0',
+  // Strategy
+  Resource:'#f5deaa', Capability:'#f5deaa',
+  CourseOfAction:'#f5deaa', ValueStream:'#f5deaa',
+}
+
+function nodeColor(elementType) {
+  return LAYER_COLOR[elementType] || '#ffffff'
+}
+
+// ── Graph init ────────────────────────────────────────────────────────────────
 function initGraph() {
   if (!containerRef.value) return
   graph = new Graph({
     container: containerRef.value,
-    autoResize: true,
     background: { color: '#fafafa' },
-    grid: { visible: true, size: 10, type: 'dot', args: { color: '#d0d0d0' } },
-    mousewheel: { enabled: true, zoomAtMousePosition: true, modifiers: 'ctrl' },
-    panning: { enabled: true, modifiers: 'alt' },
-    connecting: { snap: true },
+    grid: { visible: true, size: 10, type: 'dot',
+            args: [{ color: '#d0d0d0', thickness: 1 }] },
+    mousewheel: { enabled: true, modifiers: 'ctrl', zoomAtMousePosition: true },
+    panning:    { enabled: true, modifiers: 'alt' },
+    interacting: false,
   })
+
+  resizeObserver = new ResizeObserver(() => {
+    if (containerRef.value) {
+      graph.resize(containerRef.value.clientWidth, containerRef.value.clientHeight)
+    }
+  })
+  resizeObserver.observe(containerRef.value)
 }
 
-function renderView(view) {
-  if (!graph || !view) return
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderDiagram() {
+  if (!graph || !diagramData.value) return
   graph.clearCells()
 
-  // Placeholder: draw a label node for the selected view
-  graph.addNode({
-    x: 60, y: 60,
-    width: 320, height: 60,
-    label: view.name,
-    attrs: {
-      body: {
-        fill: '#e8f4fd',
-        stroke: '#0d6efd',
-        strokeWidth: 1.5,
-        rx: 6, ry: 6,
-      },
-      label: {
-        fontSize: 13,
-        fill: '#0d6efd',
-        fontWeight: 600,
-      },
-    },
-  })
+  const { nodes, edges } = diagramData.value
+  const nodeIds = new Set(nodes.map(n => n.id))
 
-  if (view.documentation) {
-    graph.addNode({
-      x: 60, y: 150,
-      width: 320, height: Math.min(200, 40 + view.documentation.length / 2),
-      label: view.documentation,
-      attrs: {
-        body: { fill: '#fff', stroke: '#dee2e6', strokeWidth: 1, rx: 4, ry: 4 },
-        label: { fontSize: 11, fill: '#495057', textWrap: { width: 300, ellipsis: true } },
-      },
-    })
+  for (const n of nodes) {
+    const wrap = { width: n.width - 8, height: n.height - 6, ellipsis: true }
+
+    if (n.type === 'group') {
+      graph.addNode({
+        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        zIndex: 0,
+        label: n.name,
+        attrs: {
+          body:  { fill: n.fill_color || '#f0f0f0', stroke:'#aaa',
+                   strokeWidth:1, rx:4, ry:4 },
+          label: { fontSize:11, fontWeight:600, fill:'#333',
+                   textAnchor:'middle', textVerticalAnchor:'top',
+                   refX:'50%', refY:6 },
+        },
+      })
+    } else if (n.type === 'element') {
+      graph.addNode({
+        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        zIndex: 1,
+        label: n.name,
+        attrs: {
+          body:  { fill: nodeColor(n.element_type), stroke:'#999',
+                   strokeWidth:1, rx:2, ry:2 },
+          label: { fontSize:10, fill:'#222', textWrap: wrap },
+        },
+      })
+    } else if (n.type === 'note') {
+      graph.addNode({
+        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        zIndex: 1,
+        label: n.name,
+        attrs: {
+          body:  { fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
+          label: { fontSize:10, fill:'#555', textWrap: wrap,
+                   textVerticalAnchor:'top', refY:4 },
+        },
+      })
+    } else if (n.type === 'view_ref') {
+      graph.addNode({
+        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        zIndex: 1,
+        label: '→ View',
+        attrs: {
+          body:  { fill:'#e3f2fd', stroke:'#1565c0', strokeWidth:1, rx:4 },
+          label: { fontSize:10, fill:'#1565c0' },
+        },
+      })
+    }
   }
 
-  graph.zoomToFit({ padding: 40 })
+  for (const e of edges) {
+    if (!e.source || !e.target) continue
+    if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue
+    try {
+      graph.addEdge({
+        id: e.id || undefined,
+        source: e.source,
+        target: e.target,
+        attrs: {
+          line: { stroke:'#666', strokeWidth:1,
+                  targetMarker:{ name:'block', width:8, height:6 } },
+        },
+        connector: { name:'rounded' },
+      })
+    } catch (_) { /* skip invalid */ }
+  }
+
+  graph.zoomToFit({ padding: 24 })
 }
 
-watch(currentView, (view) => {
-  if (view) renderView(view)
-  else graph?.clearCells()
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadDiagram(viewId) {
+  loading.value = true
+  diagramData.value = null
+  try {
+    const r = await fetch(`/api/diagram/${viewId}/`)
+    if (r.ok) {
+      diagramData.value = await r.json()
+      renderDiagram()
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+function fitView()   { graph?.zoomToFit({ padding: 24 }) }
+function resetZoom() { graph?.zoomTo(1); graph?.centerContent() }
+
+// ── Watchers ──────────────────────────────────────────────────────────────────
+watch(() => store.selected, node => {
+  if (node?.type === 'view') loadDiagram(node.id)
+  else { diagramData.value = null; graph?.clearCells() }
 })
 
-onMounted(() => initGraph())
-onUnmounted(() => graph?.dispose())
+onMounted(initGraph)
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+  graph?.dispose()
+})
 </script>
