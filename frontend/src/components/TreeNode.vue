@@ -1,15 +1,13 @@
 <template>
   <li :class="itemClass">
-    <span class="tree-label" @click="toggle">
+    <span class="tree-label" @click="handleClick">
       <i :class="caretClass"></i>
       <i v-if="node.type === 'node'" class="bi bi-folder-fill tree-icon-folder"></i>
       <i v-else-if="node.type === 'view'" class="bi bi-diagram-3 tree-icon-view"></i>
       <i v-else class="bi bi-box tree-icon-element"></i>
-      <span
-        class="tree-name"
-        :class="{ 'text-primary fw-semibold': isSelected }"
-        @click.stop="select"
-      >{{ node.name }}</span>
+      <span class="tree-name" :class="{ 'text-primary fw-semibold': isSelected }">
+        {{ node.name }}
+      </span>
     </span>
 
     <ul v-if="hasChildren && isOpen" class="tree-children">
@@ -49,11 +47,8 @@ const caretClass = computed(() => [
   { 'tree-caret-open': isOpen.value && hasChildren.value },
 ])
 
-function toggle() {
+function handleClick() {
   if (hasChildren.value) isOpen.value = !isOpen.value
-}
-
-function select() {
   store.selectNode(props.node)
 }
 </script>

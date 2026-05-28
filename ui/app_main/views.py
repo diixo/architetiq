@@ -273,6 +273,22 @@ def api_model(request):
     return JsonResponse(_load_model())
 
 
+def api_diagram(request, view_id):
+    def find_node(node, target_id):
+        if node.get('id') == target_id:
+            return node
+        for child in node.get('children', []):
+            found = find_node(child, target_id)
+            if found:
+                return found
+        return None
+
+    node = find_node(_load_model(), view_id)
+    if node is None:
+        return JsonResponse({'error': 'Not found'}, status=404)
+    return JsonResponse(node)
+
+
 def upload_model(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
