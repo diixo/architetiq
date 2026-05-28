@@ -405,7 +405,7 @@ def _parse_diagram_file(xml_path, elements_index):
         info = elements_index.get(eid, {})
         return eid, info.get('name', eid), info.get('element_type', '')
 
-    def parse_child(elem, px=0, py=0):
+    def parse_child(elem, px=0, py=0, emb_parent=None):
         xsi_type = elem.get(_XSI_TYPE, '')
         obj_type = xsi_type.split(':')[-1] if ':' in xsi_type else xsi_type
         oid = elem.get('id', '')
@@ -442,6 +442,7 @@ def _parse_diagram_file(xml_path, elements_index):
             for sub in elem:
                 if _local(sub.tag) == 'children':
                     parse_child(sub, ax, ay)
+            node_bounds[oid] = (ax, ay, bw, bh)
             nodes.append({
                 'id': oid, 'type': 'group',
                 'name': elem.get('name', ''),
@@ -451,16 +452,25 @@ def _parse_diagram_file(xml_path, elements_index):
 
         elif obj_type == 'DiagramModelArchimateObject':
             eid, ename, etype = '', '', ''
+            embedded = []
             for sub in elem:
-                if _local(sub.tag) == 'archimateElement':
+                stag2 = _local(sub.tag)
+                if stag2 == 'archimateElement':
                     eid, ename, etype = resolve_href(sub.get('href', ''))
-                    break
+                elif stag2 == 'children':
+                    embedded.append(sub)
             node_bounds[oid] = (ax, ay, bw, bh)
-            nodes.append({
+            node_entry = {
                 'id': oid, 'type': 'element',
                 'name': ename, 'element_id': eid, 'element_type': etype,
                 'x': ax, 'y': ay, 'width': bw, 'height': bh,
-            })
+            }
+            if emb_parent:
+                node_entry['parent_id'] = emb_parent
+            nodes.append(node_entry)
+            # Recurse embedded children — pass this node as their parent
+            for sub in embedded:
+                parse_child(sub, ax, ay, emb_parent=oid)
 
         elif obj_type == 'DiagramModelNote':
             node_bounds[oid] = (ax, ay, bw, bh)
@@ -482,8 +492,6 @@ def _parse_diagram_file(xml_path, elements_index):
                 'x': ax, 'y': ay, 'width': bw, 'height': bh,
             })
 
-        elif obj_type == 'DiagramModelGroup':
-            node_bounds[oid] = (ax, ay, bw, bh)
 
     for child in root:
         if _local(child.tag) == 'children':

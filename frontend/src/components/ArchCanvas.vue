@@ -159,6 +159,8 @@ function renderDiagram() {
 
   const { nodes, edges } = diagramData.value
   const nodeIds = new Set(nodes.map(n => n.id))
+  // Index for looking up parent absolute positions (for relative coord calc)
+  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]))
 
   for (const n of nodes) {
     const wrap = { width: n.width - 8, height: n.height - 6, ellipsis: true }
@@ -181,8 +183,15 @@ function renderDiagram() {
       const iconId = ELEMENT_ICON[n.element_type]
       const dashed = PASSIVE_TYPES.has(n.element_type)
       const iconSize = 13
+      // Embedded in another element → use relative coords + X6 parent
+      const parentNode = n.parent_id ? nodeMap[n.parent_id] : null
+      const nodeX = parentNode ? n.x - parentNode.x : n.x
+      const nodeY = parentNode ? n.y - parentNode.y : n.y
       graph.addNode({
-        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        id: n.id,
+        x: nodeX, y: nodeY,
+        width: n.width, height: n.height,
+        ...(n.parent_id ? { parent: n.parent_id } : {}),
         zIndex: 1,
         markup: ELEMENT_MARKUP,
         data: { type: 'element', element_id: n.element_id,
