@@ -171,10 +171,12 @@ function renderDiagram() {
             ...(dashed ? { strokeDasharray: '5 3' } : {}),
           },
           label: {
+            text: n.name,
             fontSize: 10, fill: '#222',
             refX: '50%', refY: '50%',
             textAnchor: 'middle', textVerticalAnchor: 'middle',
             textWrap: {
+              text: n.name,
               width: n.width - (iconId ? iconSize + 6 : 8),
               height: n.height - 8,
               ellipsis: true,

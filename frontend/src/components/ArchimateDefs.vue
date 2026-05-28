@@ -5,27 +5,25 @@
 
       <!-- ── Behavior ─────────────────────────────────────────────────────── -->
 
-      <!-- Process: rounded rect + right-pointing arrow tab -->
+      <!-- Process: right-pointing horizontal arrow (from Archi ProcessFigure.java) -->
       <symbol id="am-process" viewBox="0 0 16 16">
-        <path d="M0,2 Q0,0 2,0 L10,0 Q12,0 12,2 L12,5.5 L16,8 L12,10.5 L12,14
-                 Q12,16 10,16 L2,16 Q0,16 0,14 Z" fill="#555"/>
+        <polygon points="1,5 10,5 10,2 15,8 10,14 10,11 1,11" fill="#555"/>
       </symbol>
 
-      <!-- Function: rounded rect + serrated/zigzag bottom -->
+      <!-- Function: upward-pointing hex with inner notch (from Archi FunctionFigure.java)
+           Java coords: (0,0),(0,-9),(6,-14),(12,-9),(12,0),(6,-6) → mapped to 16×16 -->
       <symbol id="am-function" viewBox="0 0 16 16">
-        <path d="M0,1 Q0,0 1,0 L15,0 Q16,0 16,1 L16,10
-                 L14,13 L12,10 L10,13 L8,10 L6,13 L4,10 L2,13 L0,10 Z"
-              fill="#555"/>
+        <polygon points="2,15 2,6 8,1 14,6 14,15 8,9" fill="#555"/>
       </symbol>
 
-      <!-- Service: D-shape (flat left, curved right) -->
+      <!-- Service: rounded rect (half-oval, from Archi ServiceFigure.java) -->
       <symbol id="am-service" viewBox="0 0 16 16">
-        <path d="M2,0 h5 a9,9 0 0 1 0,16 h-5 Z" fill="#555"/>
+        <rect x="1" y="1" width="14" height="9" rx="4.5" ry="4.5" fill="#555"/>
       </symbol>
 
-      <!-- Event: pentagon (tag shape, opening to left) -->
+      <!-- Event: concave left arc (from Archi EventFigure.java — arc+rect+arc) -->
       <symbol id="am-event" viewBox="0 0 16 16">
-        <path d="M4,0 h12 v16 h-12 l-4,-8 Z" fill="#555"/>
+        <path d="M6,0 H16 V16 H6 Q0,12.5 0,8 Q0,3.5 6,0 Z" fill="#555"/>
       </symbol>
 
       <!-- Interaction: two overlapping circles -->
@@ -42,10 +40,17 @@
         <path d="M1,16 Q1,9 8,9 Q15,9 15,16 Z" fill="#555"/>
       </symbol>
 
-      <!-- Role: circle outline (ring) -->
+      <!-- Role: lens / binoculars shape (from Archi BusinessRoleFigure.java — two ovals) -->
       <symbol id="am-role" viewBox="0 0 16 16">
-        <path d="M8,1 a7,7 0 0 1 0,14 a7,7 0 0 1 0,-14 Z
-                 M8,4 a4,4 0 0 0 0,8 a4,4 0 0 0 0,-8 Z" fill="#555" fill-rule="evenodd"/>
+        <!-- left oval (half-arc) -->
+        <path d="M5,2 a4,6 0 0 0 0,12 a4,6 0 0 0 0,-12 Z
+                 M5,4 a2,4 0 0 1 0,8 a2,4 0 0 1 0,-8 Z"
+              fill="#555" fill-rule="evenodd"/>
+        <!-- right oval (full) -->
+        <path d="M11,2 a4,6 0 0 1 0,12 a4,6 0 0 1 0,-12 Z
+                 M11,4 a2,4 0 0 0 0,8 a2,4 0 0 0 0,-8 Z"
+              fill="#555" fill-rule="evenodd"/>
+        <rect x="5" y="7" width="6" height="2" fill="#555"/>
       </symbol>
 
       <!-- Collaboration: two overlapping circles (filled) -->
@@ -162,9 +167,17 @@
 
       <!-- ── Motivation ─────────────────────────────────────────────────── -->
 
-      <!-- Outcome: filled circle -->
-      <symbol id="am-outcome" viewBox="0 0 16 16">
-        <circle cx="8" cy="8" r="7" fill="#555"/>
+      <!-- Outcome: 3 concentric circles + arrow (from Archi OutcomeFigure.java) -->
+      <symbol id="am-outcome" viewBox="0 0 20 16">
+        <!-- outer circle r≈6, center ~(7,8) -->
+        <circle cx="7" cy="8" r="6"   fill="none" stroke="#555" stroke-width="1.5"/>
+        <!-- middle circle r≈4 -->
+        <circle cx="7" cy="8" r="3.5" fill="none" stroke="#555" stroke-width="1.5"/>
+        <!-- inner circle r≈1.5 -->
+        <circle cx="7" cy="8" r="1.5" fill="#555"/>
+        <!-- arrow from center to upper-right -->
+        <line x1="7" y1="8" x2="17" y2="1" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <polygon points="14,0 19,0.5 17.5,5" fill="#555"/>
       </symbol>
 
       <!-- Goal: empty circle (ring) -->
