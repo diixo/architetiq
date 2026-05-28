@@ -23,7 +23,12 @@
       </div>
     </div>
 
-    <div class="flex-grow-1 position-relative" style="overflow:hidden;">
+    <div
+      class="flex-grow-1 position-relative"
+      style="overflow:hidden;"
+      @dragover.prevent
+      @drop="onDrop"
+    >
       <div ref="containerRef" class="w-100 h-100"></div>
       <div
         v-if="!diagramData && !loading"
@@ -42,6 +47,12 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Graph } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
+import { humanizeType } from '../archimate-folder-elements.js'
+import { nodeColor } from '../archimate-styles.js'
+
+const props = defineProps({
+  connectionType: { type: String, default: null },
+})
 
 const store         = useModelStore()
 const containerRef  = ref(null)
@@ -130,42 +141,6 @@ function orthogonalPoints(src, tgt) {
   }
 }
 
-// ── ArchiMate layer colours (Archi defaults) ─────────────────────────────────
-const LAYER_COLOR = {
-  // Business
-  BusinessActor:'#ffffb5', BusinessRole:'#ffffb5', BusinessCollaboration:'#ffffb5',
-  BusinessInterface:'#ffffb5', BusinessFunction:'#ffffb5', BusinessProcess:'#ffffb5',
-  BusinessInteraction:'#ffffb5', BusinessEvent:'#ffffb5', BusinessService:'#ffffb5',
-  BusinessObject:'#ffffb5', Contract:'#ffffb5', Representation:'#ffffb5',
-  Product:'#ffffb5',
-  // Application
-  ApplicationComponent:'#b5ffff', ApplicationCollaboration:'#b5ffff',
-  ApplicationInterface:'#b5ffff', ApplicationFunction:'#b5ffff',
-  ApplicationInteraction:'#b5ffff', ApplicationProcess:'#b5ffff',
-  ApplicationEvent:'#b5ffff', ApplicationService:'#b5ffff', DataObject:'#b5ffff',
-  // Technology
-  Node:'#b5ffb5', Device:'#b5ffb5', SystemSoftware:'#b5ffb5',
-  TechnologyCollaboration:'#b5ffb5', TechnologyInterface:'#b5ffb5',
-  TechnologyFunction:'#b5ffb5', TechnologyInteraction:'#b5ffb5',
-  TechnologyProcess:'#b5ffb5', TechnologyEvent:'#b5ffb5',
-  TechnologyService:'#b5ffb5', Artifact:'#b5ffb5',
-  CommunicationNetwork:'#b5ffb5', Path:'#b5ffb5',
-  Equipment:'#b5ffb5', Facility:'#b5ffb5', Material:'#b5ffb5',
-  // Motivation
-  Stakeholder:'#ccccff', Driver:'#ccccff', Assessment:'#ccccff',
-  Goal:'#ccccff', Outcome:'#ccccff', Principle:'#ccccff',
-  Requirement:'#ccccff', Constraint:'#ccccff', Meaning:'#ccccff', Value:'#ccccff',
-  // Implementation & Migration
-  WorkPackage:'#ffe0e0', Deliverable:'#ffe0e0', ImplementationEvent:'#ffe0e0',
-  Plateau:'#ffe0e0', Gap:'#ffe0e0',
-  // Strategy
-  Resource:'#f5deaa', Capability:'#f5deaa',
-  CourseOfAction:'#f5deaa', ValueStream:'#f5deaa',
-}
-
-function nodeColor(elementType) {
-  return LAYER_COLOR[elementType] || '#ffffff'
-}
 
 // ── ArchiMate shape categories ────────────────────────────────────────────────
 // Per Archi source: most figures use RoundedRectangleFigureDelegate for type=0 (default).
@@ -514,6 +489,68 @@ async function loadDiagram(viewId) {
 
 function fitView()   { graph?.zoomToFit({ padding: 24 }) }
 function resetZoom() { graph?.zoomTo(1); graph?.centerContent() }
+
+// ── Drag-and-drop from palette ────────────────────────────────────────────────
+function onDrop(e) {
+  if (!graph || !diagramData.value) return
+  const raw = e.dataTransfer?.getData('application/archimate-element')
+  if (!raw) return
+
+  const { elementType, folderType } = JSON.parse(raw)
+  // Convert screen coords → canvas local coords
+  const rect = containerRef.value.getBoundingClientRect()
+  const scale = graph.zoom()
+  const trs   = graph.translate()
+  const x = (e.clientX - rect.left - trs.tx) / scale
+  const y = (e.clientY - rect.top  - trs.ty) / scale
+
+  const id      = crypto.randomUUID ? crypto.randomUUID()
+    : `new-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const name    = humanizeType(elementType)
+  const w = 120, h = 55
+  const bodyPath = getElementPath(elementType, w, h)
+  const iconId   = ELEMENT_ICON[elementType]
+  const iconSize = 13
+
+  graph.addNode({
+    id, x: x - w/2, y: y - h/2, width: w, height: h,
+    zIndex: 1,
+    markup: ELEMENT_MARKUP,
+    data: { type: 'element', element_id: id, element_type: elementType, name, id },
+    attrs: {
+      body:  { d: bodyPath, fill: nodeColor(elementType), stroke: '#888', strokeWidth: 1, magnet: true },
+      label: { text: name, fontSize: 10, fill: '#222',
+               refX: '50%', refY: '50%', textAnchor: 'middle', textVerticalAnchor: 'middle',
+               textWrap: { text: name, width: w - (iconId ? iconSize + 6 : 8), height: h - 8, ellipsis: true } },
+      icon: iconId ? { href: `#${iconId}`, x: w - iconSize - 2, y: 2, width: iconSize, height: iconSize }
+                   : { width: 0, height: 0 },
+    },
+  })
+
+  // Add to model tree
+  store.addElement(store.findFolderByType(folderType)?.id, elementType)
+  isDirty.value = true
+}
+
+// ── Watch connectionType from palette ─────────────────────────────────────────
+watch(() => props.connectionType, (relType) => {
+  if (!graph) return
+  // Store on newly created edges
+  graph.off('edge:connected')
+  if (relType) {
+    graph.on('edge:connected', ({ edge }) => {
+      edge.setData({ type: relType })
+      const s = edgeStyle(relType)
+      edge.setAttrs({
+        line: {
+          stroke: s.stroke, strokeWidth: s.strokeWidth,
+          ...(s.dash ? { strokeDasharray: s.dash } : {}),
+          sourceMarker: s.src, targetMarker: s.tgt,
+        },
+      })
+    })
+  }
+})
 
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => store.selected, node => {

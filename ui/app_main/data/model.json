@@ -3407,6 +3407,22 @@
           "id": "ffd3a484-2df8-4c56-95a9-cffde49f7d36",
           "documentation": "Identify and agree interfaces of the project with other (sub-) projects, organizational units and other affected stakeholders and monitoragreed commitments.\r\nNOTE 9: Project interfaces relate to engineering, management and supporting processes",
           "children": []
+        },
+        {
+          "id": "f351ce3a-ca34-4d3d-a6ec-945c34c20d8e",
+          "name": "Contract",
+          "type": "element",
+          "element_type": "Contract",
+          "documentation": "",
+          "children": []
+        },
+        {
+          "id": "c1e3c16f-312f-4a0e-b30f-b69a7dc68fef",
+          "name": "Business Service",
+          "type": "element",
+          "element_type": "BusinessService",
+          "documentation": "",
+          "children": []
         }
       ],
       "folder_type": "business"

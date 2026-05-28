@@ -128,6 +128,19 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
+  function findFolderByType(folderType) {
+    if (!model.value || !folderType) return null
+    function walk(node) {
+      if (node.folder_type === folderType) return node
+      for (const c of (node.children || [])) {
+        const r = walk(c)
+        if (r) return r
+      }
+      return null
+    }
+    return walk(model.value)
+  }
+
   function getNodePath(id) {
     if (!model.value || !id) return []
     function find(node, target, path) {
@@ -145,7 +158,7 @@ export const useModelStore = defineStore('model', () => {
 
   return {
     model, selected, loading, error, filterQuery, editingNodeId,
-    fetchModel, selectNode, findById, getNodePath, resetModel, saveModel,
-    renameNode, deleteNode, addChildFolder, addElement,
+    fetchModel, selectNode, findById, getNodePath, findFolderByType,
+    resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement,
   }
 })

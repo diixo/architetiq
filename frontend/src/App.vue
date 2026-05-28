@@ -95,9 +95,10 @@
         <PropertiesPanel />
       </div>
 
-      <!-- Canvas area -->
-      <div class="flex-grow-1 overflow-auto">
-        <ArchCanvas />
+      <!-- Canvas area + Palette -->
+      <div class="flex-grow-1 d-flex overflow-hidden">
+        <ArchCanvas ref="canvasRef" :connection-type="activeConnType" class="flex-grow-1" />
+        <CanvasPalette @connection-type-changed="activeConnType = $event" />
       </div>
 
     </main>
@@ -128,9 +129,12 @@ import ModelTree from './components/ModelTree.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
 import ArchCanvas from './components/ArchCanvas.vue'
 import ArchimateDefs from './components/ArchimateDefs.vue'
+import CanvasPalette from './components/CanvasPalette.vue'
 
 const store = useModelStore()
 const fileInputRef = ref(null)
+const canvasRef = ref(null)
+const activeConnType = ref(null)
 const toast = ref('')
 let toastTimer = null
 
