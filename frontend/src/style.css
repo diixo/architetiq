@@ -74,7 +74,7 @@ html, body { height: 100%; margin: 0; }
 
 .palette-grid {
   display: grid;
-  grid-template-columns: repeat(3, 20px);
+  grid-template-columns: repeat(3, 16px);
   gap: 3px;
   padding: 2px 0 4px 0;
 }
@@ -152,11 +152,16 @@ html, body { height: 100%; margin: 0; }
 .palette-item-icon { font-size: 0.65rem; color: #adb5bd; flex-shrink: 0; }
 .palette-type-icon {
   flex-shrink: 0;
-  display: block;
-  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
   border-radius: 2px;
+  border: 1px solid #ccc;
+  cursor: grab;
+  box-sizing: border-box;
 }
-.palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-radius: 2px; }
+.palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-color: #0d6efd; }
 .palette-type-icon:active { cursor: grabbing; }
 
 /* Context menu */

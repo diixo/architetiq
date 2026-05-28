@@ -12,22 +12,24 @@
       <template v-for="(layer, idx) in LAYERS" :key="layer.folder_type">
         <div class="palette-divider" v-if="idx > 0"></div>
         <div class="palette-grid">
-          <svg
+          <div
             v-for="et in layer.types"
             :key="et"
             class="palette-type-icon"
-            viewBox="0 0 20 20"
-            width="20" height="20"
             draggable="true"
             :title="humanizeType(et)"
+            :style="{ background: nodeColor(et) }"
             @dragstart="onDragStart($event, et, layer.folder_type)"
           >
-            <rect width="20" height="20" rx="2"
-                  :fill="nodeColor(et)" stroke="#999" stroke-width="0.8"/>
-            <use v-if="ELEMENT_ICON[et]"
-                 :href="`#${ELEMENT_ICON[et]}`"
-                 x="4" y="4" width="12" height="12"/>
-          </svg>
+            <img
+              v-if="PALETTE_ICON[et]"
+              :src="PALETTE_ICON[et]"
+              width="16" height="16"
+              :alt="humanizeType(et)"
+              draggable="false"
+            />
+            <span v-else style="font-size:0.5rem;color:#999;">?</span>
+          </div>
         </div>
       </template>
 
@@ -38,8 +40,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { humanizeType } from '../archimate-folder-elements.js'
-import { ELEMENT_ICON } from '../archimate-icons.js'
 import { nodeColor } from '../archimate-styles.js'
+import { PALETTE_ICON } from '../archimate-palette-icons.js'
 
 const emit = defineEmits(['connection-type-changed'])
 

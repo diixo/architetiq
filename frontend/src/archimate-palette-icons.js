@@ -1,0 +1,91 @@
+// Maps ArchiMate element/relation type → Archi PNG icon filename
+// Source: C:\git\archi\com.archimatetool.editor\img\archimate\
+// BASE_URL resolves to /static/vue/ in prod and dev (Vite base config)
+const BASE = import.meta.env.BASE_URL + 'archimate-icons/'
+
+export const PALETTE_ICON = {
+  // ── Business ───────────────────────────────────────────────────────────────
+  BusinessActor:         BASE + 'business-actor.png',
+  BusinessRole:          BASE + 'actor.png',
+  BusinessCollaboration: BASE + 'business-collaboration.png',
+  BusinessInterface:     BASE + 'business-interface.png',
+  BusinessProcess:       BASE + 'business-process.png',
+  BusinessFunction:      BASE + 'business-function.png',
+  BusinessInteraction:   BASE + 'business-interaction.png',
+  BusinessEvent:         BASE + 'business-event.png',
+  BusinessService:       BASE + 'business-service.png',
+  BusinessObject:        BASE + 'business-object.png',
+  Contract:              BASE + 'contract.png',
+  Representation:        BASE + 'representation.png',
+  Product:               BASE + 'product.png',
+  // ── Application ───────────────────────────────────────────────────────────
+  ApplicationComponent:    BASE + 'application-component.png',
+  ApplicationCollaboration:BASE + 'application-collaboration.png',
+  ApplicationInterface:    BASE + 'application-interface.png',
+  ApplicationFunction:     BASE + 'application-function.png',
+  ApplicationInteraction:  BASE + 'application-interaction.png',
+  ApplicationProcess:      BASE + 'application-process.png',
+  ApplicationEvent:        BASE + 'application-event.png',
+  ApplicationService:      BASE + 'application-service.png',
+  DataObject:              BASE + 'data-object.png',
+  // ── Technology ────────────────────────────────────────────────────────────
+  Node:                   BASE + 'node.png',
+  Device:                 BASE + 'device.png',
+  SystemSoftware:         BASE + 'system-software.png',
+  TechnologyCollaboration:BASE + 'technology-collaboration.png',
+  TechnologyInterface:    BASE + 'technology-interface.png',
+  Path:                   BASE + 'path.png',
+  CommunicationNetwork:   BASE + 'communication-network.png',
+  TechnologyFunction:     BASE + 'technology-function.png',
+  TechnologyProcess:      BASE + 'technology-process.png',
+  TechnologyInteraction:  BASE + 'technology-interaction.png',
+  TechnologyEvent:        BASE + 'technology-event.png',
+  TechnologyService:      BASE + 'technology-service.png',
+  Artifact:               BASE + 'artifact.png',
+  // ── Physical ──────────────────────────────────────────────────────────────
+  Equipment:             BASE + 'equipment.png',
+  Facility:              BASE + 'facility.png',
+  DistributionNetwork:   BASE + 'distribution-network.png',
+  Material:              BASE + 'material.png',
+  // ── Motivation ────────────────────────────────────────────────────────────
+  Stakeholder:  BASE + 'stakeholder.png',
+  Driver:       BASE + 'driver.png',
+  Assessment:   BASE + 'assessment.png',
+  Goal:         BASE + 'goal.png',
+  Outcome:      BASE + 'outcome.png',
+  Principle:    BASE + 'principle.png',
+  Requirement:  BASE + 'requirement.png',
+  Constraint:   BASE + 'constraint.png',
+  Meaning:      BASE + 'meaning.png',
+  Value:        BASE + 'value.png',
+  // ── Implementation & Migration ────────────────────────────────────────────
+  WorkPackage:        BASE + 'workpackage.png',
+  Deliverable:        BASE + 'deliverable.png',
+  ImplementationEvent:BASE + 'implementation-event.png',
+  Plateau:            BASE + 'plateau.png',
+  Gap:                BASE + 'gap.png',
+  // ── Strategy ──────────────────────────────────────────────────────────────
+  Resource:       BASE + 'resource.png',
+  Capability:     BASE + 'capability.png',
+  ValueStream:    BASE + 'value-stream.png',
+  CourseOfAction: BASE + 'course-of-action.png',
+  // ── Other ─────────────────────────────────────────────────────────────────
+  Location: BASE + 'location.png',
+  Grouping: BASE + 'grouping.png',
+  // ── Relations ─────────────────────────────────────────────────────────────
+  AssociationRelationship:    BASE + 'association.png',
+  CompositionRelationship:    BASE + 'composition.png',
+  AggregationRelationship:    BASE + 'aggregation.png',
+  AssignmentRelationship:     BASE + 'assignment.png',
+  RealizationRelationship:    BASE + 'realization.png',
+  ServingRelationship:        BASE + 'serving.png',
+  AccessRelationship:         BASE + 'access.png',
+  InfluenceRelationship:      BASE + 'influence.png',
+  TriggeringRelationship:     BASE + 'triggering.png',
+  FlowRelationship:           BASE + 'flow.png',
+  SpecializationRelationship: BASE + 'specialization.png',
+  Junction:                   BASE + 'and-junction.png',
+  // ── View extras ───────────────────────────────────────────────────────────
+  Note:        BASE + 'note.png',
+  DiagramGroup:BASE + 'diagram-group.png',
+}
