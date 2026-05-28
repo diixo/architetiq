@@ -7,6 +7,11 @@ export const useModelStore = defineStore('model', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  function csrfToken() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/)
+    return m ? m[1] : ''
+  }
+
   async function fetchModel() {
     loading.value = true
     try {
@@ -17,6 +22,25 @@ export const useModelStore = defineStore('model', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  async function resetModel() {
+    const r = await fetch('/api/model/new/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken() },
+    })
+    if (r.ok) {
+      selected.value = null
+      await fetchModel()
+    }
+  }
+
+  async function saveModel() {
+    const r = await fetch('/api/model/save/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken() },
+    })
+    return r.ok ? (await r.json()) : null
   }
 
   function selectNode(node) {
@@ -36,5 +60,5 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
-  return { model, selected, loading, error, fetchModel, selectNode, findById }
+  return { model, selected, loading, error, fetchModel, selectNode, findById, resetModel, saveModel }
 })

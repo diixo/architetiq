@@ -273,6 +273,84 @@ def api_model(request):
     return JsonResponse(_load_model())
 
 
+def api_model_new(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
+    with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
+        json.dump(_DEFAULT_MODEL, f, ensure_ascii=False, indent=2)
+    return JsonResponse({'ok': True})
+
+
+def api_model_save(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    model = _load_model()
+    return JsonResponse({'ok': True, 'name': model.get('name', '')})
+
+
+_FOLDER_TYPE = {
+    'Strategy':                      'strategy',
+    'Business':                      'business',
+    'Application':                   'application',
+    'Technology And Physical':       'technology',
+    'Motivation':                    'motivation',
+    'Implementation and Migration':  'implementation_migration',
+    'Other':                         'other',
+    'Relations':                     'relations',
+    'Views':                         'diagrams',
+}
+
+
+def _build_archimate_xml(model):
+    import xml.etree.ElementTree as ET
+    NS  = 'http://www.archimatetool.com/archimate'
+    XSI = 'http://www.w3.org/2001/XMLSchema-instance'
+    ET.register_namespace('archimate', NS)
+    ET.register_namespace('xsi', XSI)
+
+    root = ET.Element(f'{{{NS}}}model')
+    root.set('name', model.get('name', ''))
+    root.set('id',   model.get('id', ''))
+    root.set('version', '4.6.0')
+    if model.get('purpose'):
+        root.set('purpose', model['purpose'])
+
+    def build_node(parent, node):
+        if node['type'] == 'node':
+            folder_type = _FOLDER_TYPE.get(node['name'],
+                          node['name'].lower().replace(' ', '_'))
+            folder = ET.SubElement(parent, 'folder')
+            folder.set('name', node['name'])
+            folder.set('id',   node.get('id', ''))
+            folder.set('type', folder_type)
+            for child in node.get('children', []):
+                build_node(folder, child)
+        elif node['type'] in ('element', 'view'):
+            et = node.get('element_type', 'BusinessActor')
+            elem = ET.SubElement(parent, 'element')
+            elem.set(f'{{{XSI}}}type', f'archimate:{et}')
+            elem.set('name', node.get('name', ''))
+            elem.set('id',   node.get('id', ''))
+            if node.get('documentation'):
+                elem.set('documentation', node['documentation'])
+
+    for child in model.get('children', []):
+        build_node(root, child)
+
+    ET.indent(root, space='  ')
+    return b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode').encode('utf-8')
+
+
+def api_model_export(request):
+    model = _load_model()
+    xml_bytes = _build_archimate_xml(model)
+    safe_name = model.get('name', 'model').replace(' ', '_')
+    response = HttpResponse(xml_bytes, content_type='application/xml; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{safe_name}.archimate"'
+    return response
+
+
 # ── Diagram visual data ───────────────────────────────────────────────────────
 
 def _build_elements_index(model):

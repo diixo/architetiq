@@ -26,7 +26,9 @@
           <ul class="dropdown-menu shadow-sm" style="font-size: 0.875rem;">
             <li><a class="dropdown-item" href="#" @click.prevent="onNew">New</a></li>
             <li><a class="dropdown-item" href="#" @click.prevent="triggerOpen">Open</a></li>
-            <li><a class="dropdown-item" href="#">Save</a></li>
+            <li><a class="dropdown-item" href="#" @click.prevent="onSave">Save</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/api/model/export/" target="_blank">Export .archimate</a></li>
           </ul>
         </li>
         <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-list-check"></i> Requirements</a></li>
@@ -57,6 +59,13 @@
 
     </main>
 
+    <!-- Toast notification -->
+    <div
+      v-if="toast"
+      class="position-fixed bottom-0 end-0 m-3 px-3 py-2 rounded shadow-sm text-white"
+      style="background:#343a40; font-size:0.875rem; z-index:9999;"
+    >{{ toast }}</div>
+
     <!-- Hidden file input for Open -->
     <input
       ref="fileInputRef"
@@ -79,13 +88,28 @@ import ArchimateDefs from './components/ArchimateDefs.vue'
 
 const store = useModelStore()
 const fileInputRef = ref(null)
+const toast = ref('')
+let toastTimer = null
+
+function showToast(msg) {
+  toast.value = msg
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value = '' }, 2500)
+}
 
 function triggerOpen() {
   fileInputRef.value?.click()
 }
 
-function onNew() {
-  // TODO: reset to default model
+async function onNew() {
+  if (!confirm('Reset to a new empty model?')) return
+  await store.resetModel()
+  showToast('New model created')
+}
+
+async function onSave() {
+  const result = await store.saveModel()
+  if (result?.ok) showToast(`Saved: ${result.name}`)
 }
 
 async function onFileSelected(e) {
