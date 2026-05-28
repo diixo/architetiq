@@ -150,20 +150,14 @@ function nodeColor(elementType) {
 }
 
 // ── ArchiMate shape categories ────────────────────────────────────────────────
+// Per Archi source: most figures use RoundedRectangleFigureDelegate for type=0 (default).
+// Custom shapes (process arrow, function polygon, etc.) are user-selectable alternatives.
+// Only truly standardized shape differences are kept here:
 const SHAPE_TYPE = {
-  // Process: rect + right arrow tab (BendpointConnectionRouter default)
-  BusinessProcess:'process', ApplicationProcess:'process', TechnologyProcess:'process',
-  BusinessInteraction:'process', ApplicationInteraction:'process', TechnologyInteraction:'process',
-  // Function: upward chevron with inner notch (FunctionFigure.java)
-  BusinessFunction:'function', ApplicationFunction:'function', TechnologyFunction:'function',
-  // Service: rounded rectangle
-  BusinessService:'service', ApplicationService:'service', TechnologyService:'service',
-  // Event: pentagon with left arrow indent (EventFigure.java)
-  BusinessEvent:'event', ApplicationEvent:'event', TechnologyEvent:'event', ImplementationEvent:'event',
-  // Passive structure: folded top-right corner
+  // Passive structure: folded top-right corner (standard ArchiMate notation)
   BusinessObject:'passive', DataObject:'passive', Artifact:'passive',
   Contract:'passive', Representation:'passive', Material:'passive',
-  // ApplicationComponent: rect with two nubs on left
+  // ApplicationComponent: rect with two nubs on left (standard IT notation)
   ApplicationComponent:'component',
 }
 
@@ -173,41 +167,21 @@ function roundedRect(w, h, r = 3) {
 }
 
 function getElementPath(et, w, h) {
-  // Large/wide elements (containers, bars) always use rounded rectangles.
-  // In Archi FunctionFigure.java: type=0 (default) uses RoundedRectangleFigureDelegate.
-  // Custom shapes only make sense on small standalone elements.
-  if (h > 70 || w > 250) return roundedRect(w, h, 3)
-
   const s = SHAPE_TYPE[et] || 'rect'
   switch (s) {
-    case 'process': {
-      const t = Math.min(h * 0.35, w * 0.15, 18)
-      return `M 0,0 H ${w-t} L ${w},${h/2} L ${w-t},${h} H 0 Z`
-    }
-    case 'function': {
-      // FunctionFigure.java: indent at h/5 from top, notch at 3h/5 from top
-      const iy = h / 5, ny = h * 3 / 5
-      return `M 0,${h} L 0,${iy} L ${w/2},0 L ${w},${iy} L ${w},${h} L ${w/2},${ny} Z`
-    }
-    case 'service': {
-      const r = Math.min(h * 0.45, w * 0.18)
-      return `M ${r},0 H ${w-r} Q ${w},0 ${w},${r} V ${h-r} Q ${w},${h} ${w-r},${h} H ${r} Q 0,${h} 0,${h-r} V ${r} Q 0,0 ${r},0 Z`
-    }
-    case 'event': {
-      const i = Math.min(h / 3, w / 3, 18)
-      return `M ${i},0 H ${w} V ${h} H ${i} L 0,${h/2} Z`
-    }
     case 'passive': {
+      // Folded top-right corner (ArchiMate passive structure notation)
       const f = Math.min(w * 0.18, h * 0.28, 12)
       return `M 0,0 H ${w-f} L ${w},${f} V ${h} H 0 Z`
     }
     case 'component': {
+      // ApplicationComponent: rect with two nubs on left side
       const nb = Math.min(w * 0.12, 12), nh = Math.min(h * 0.22, 12)
       const g1 = h * 0.2, g2 = h * 0.52
       return `M ${nb},0 H ${w} V ${h} H ${nb} V ${g2+nh} H 0 V ${g2} H ${nb} V ${g1+nh} H 0 V ${g1} H ${nb} Z`
     }
     default:
-      return roundedRect(w, h, 2)
+      return roundedRect(w, h, 3)
   }
 }
 
@@ -295,32 +269,19 @@ function renderDiagram() {
       const dashed  = PASSIVE_TYPES.has(n.element_type)
       const iconSize = 13
       const zIdx    = n.parent_id ? 2 : 1
-      const shape   = SHAPE_TYPE[n.element_type] || 'rect'
+      const shape    = SHAPE_TYPE[n.element_type] || 'rect'
       const bodyPath = getElementPath(n.element_type, n.width, n.height)
 
-      // Adjust label area for shapes that have non-rectangular areas
-      const tabOffset     = (shape === 'process')   ? Math.min(n.height * 0.35, n.width * 0.15, 20) : 0
-      const indentOffset  = (shape === 'event')     ? Math.min(n.height / 3, n.width / 3, 20)       : 0
-      const nubOffset     = (shape === 'component') ? Math.min(n.width * 0.12, 12)                   : 0
-      const foldOffset    = (shape === 'passive')   ? Math.min(n.width * 0.18, n.height * 0.28, 13) : 0
+      // Shift label/icon for shapes with non-rectangular areas
+      const nubOffset  = (shape === 'component') ? Math.min(n.width * 0.12, 12) : 0
+      const foldOffset = (shape === 'passive')   ? Math.min(n.width * 0.18, n.height * 0.28, 12) : 0
 
-      // Effective text area width (subtract shape protrusions and icon)
-      const textAreaW = n.width - tabOffset - indentOffset - nubOffset
-                        - (iconId ? iconSize + 6 : 8)
-                        - (foldOffset > 0 && iconId ? foldOffset : 0)
-
-      // Icon position: top-right, shifted for process tab and passive fold
-      const iconX = n.width - iconSize - tabOffset - 2
-      const iconY = (shape === 'passive') ? foldOffset + 2 : 2
-
-      // Label center shifts for asymmetric shapes
-      const labelCX = (shape === 'process')
-        ? `${Math.round((n.width - tabOffset) / 2)}px`
-        : (shape === 'event')
-          ? `${Math.round(indentOffset / 2 + (n.width - indentOffset) / 2)}px`
-          : (shape === 'component')
-            ? `${Math.round(nubOffset + (n.width - nubOffset) / 2)}px`
-            : '50%'
+      const textAreaW = n.width - nubOffset - (iconId ? iconSize + 6 : 8)
+      const iconX     = n.width - iconSize - 2
+      const iconY     = (shape === 'passive') ? foldOffset + 2 : 2
+      const labelCX   = (shape === 'component')
+        ? `${Math.round(nubOffset + (n.width - nubOffset) / 2)}`
+        : '50%'
 
       graph.addNode({
         id: n.id,
@@ -344,7 +305,7 @@ function renderDiagram() {
             textAnchor: 'middle', textVerticalAnchor: 'middle',
             textWrap: { text: n.name, width: textAreaW, height: n.height - 8, ellipsis: true },
           },
-          icon: iconId ? {
+          icon: iconId && iconX > 0 ? {
             href: `#${iconId}`,
             x: iconX, y: iconY,
             width: iconSize, height: iconSize,
