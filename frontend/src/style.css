@@ -59,6 +59,16 @@ html, body { height: 100%; margin: 0; }
 .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-children { padding-left: 1rem; }
 
+/* Mobile menu nav-links */
+#mobileMenu .nav-link {
+  color: #495057;
+  font-weight: 500;
+}
+#mobileMenu .nav-link:hover,
+#mobileMenu .nav-link.active {
+  color: #712cf9;
+}
+
 .tree-filter-input {
   height: 20px !important;
   padding: 1px 6px !important;

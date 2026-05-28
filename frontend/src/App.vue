@@ -10,11 +10,54 @@
         </div>
         <span class="badge text-bg-light border">v0.1</span>
         <div class="flex-grow-1"></div>
+        <!-- Burger button — mobile only -->
+        <button
+          class="btn btn-light border d-md-none"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mobileMenu"
+          aria-controls="mobileMenu"
+          aria-expanded="false"
+          aria-label="Toggle menu"
+        >
+          <i class="bi bi-list" style="font-size:1.25rem; -webkit-text-stroke:0.5px;"></i>
+        </button>
       </div>
     </header>
 
-    <!-- Horizontal menu -->
-    <nav class="horizontal-menu-wrapper">
+    <!-- Mobile dropdown menu — visible only on small screens -->
+    <div class="collapse d-md-none border-bottom" id="mobileMenu">
+      <nav class="px-3 py-2 bg-white">
+        <ul class="nav flex-column" style="font-size:0.875rem;">
+          <li class="nav-item">
+            <a class="nav-link active" href="#"><i class="bi bi-house-door me-2"></i>Overview</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" @click.prevent="onNew"><i class="bi bi-file me-2"></i>New</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" @click.prevent="triggerOpen"><i class="bi bi-folder2-open me-2"></i>Open</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" @click.prevent="onSave"><i class="bi bi-save me-2"></i>Save</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/api/model/export/" target="_blank"><i class="bi bi-box-arrow-up me-2"></i>Export .archimate</a>
+          </li>
+          <li><hr class="my-1"></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-list-check me-2"></i>Requirements</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-diagram-3 me-2"></i>Architecture</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-kanban me-2"></i>Scenarios</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bug me-2"></i>Issues</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-shield-check me-2"></i>Compliance</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bar-chart me-2"></i>Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Horizontal menu — desktop only -->
+    <nav class="horizontal-menu-wrapper d-none d-md-block">
       <ul class="nav horizontal-menu flex-nowrap px-3">
         <li class="nav-item">
           <a class="nav-link active" href="#"><i class="bi bi-house-door"></i> Overview</a>
