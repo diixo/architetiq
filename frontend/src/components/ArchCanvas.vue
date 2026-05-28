@@ -93,6 +93,19 @@ function initGraph() {
     interacting: false,
   })
 
+  graph.on('node:click', ({ node }) => {
+    const d = node.getData()
+    if (!d) return
+    if (d.element_id) {
+      // Resolve full element from model tree to get documentation etc.
+      const full = store.findById(d.element_id)
+      store.selectNode(full || d)
+    } else {
+      // group / note / view_ref — select with what we have
+      store.selectNode(d)
+    }
+  })
+
   resizeObserver = new ResizeObserver(() => {
     if (containerRef.value) {
       graph.resize(containerRef.value.clientWidth, containerRef.value.clientHeight)
@@ -117,6 +130,7 @@ function renderDiagram() {
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 0,
         label: n.name,
+        data: { type: 'group', name: n.name, id: n.id },
         attrs: {
           body:  { fill: n.fill_color || '#f0f0f0', stroke:'#aaa',
                    strokeWidth:1, rx:4, ry:4 },
@@ -130,6 +144,8 @@ function renderDiagram() {
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 1,
         label: n.name,
+        data: { type: 'element', element_id: n.element_id,
+                element_type: n.element_type, name: n.name, id: n.element_id },
         attrs: {
           body:  { fill: nodeColor(n.element_type), stroke:'#999',
                    strokeWidth:1, rx:2, ry:2 },
@@ -141,6 +157,7 @@ function renderDiagram() {
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 1,
         label: n.name,
+        data: { type: 'note', name: n.name, id: n.id },
         attrs: {
           body:  { fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
           label: { fontSize:10, fill:'#555', textWrap: wrap,
@@ -152,6 +169,7 @@ function renderDiagram() {
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 1,
         label: '→ View',
+        data: { type: 'view', id: n.ref_id, name: '→ View' },
         attrs: {
           body:  { fill:'#e3f2fd', stroke:'#1565c0', strokeWidth:1, rx:4 },
           label: { fontSize:10, fill:'#1565c0' },

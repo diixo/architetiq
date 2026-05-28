@@ -23,5 +23,18 @@ export const useModelStore = defineStore('model', () => {
     selected.value = node
   }
 
-  return { model, selected, loading, error, fetchModel, selectNode }
+  function findById(id) {
+    if (!model.value || !id) return null
+    function walk(node) {
+      if (node.id === id) return node
+      for (const child of (node.children || [])) {
+        const found = walk(child)
+        if (found) return found
+      }
+      return null
+    }
+    return walk(model.value)
+  }
+
+  return { model, selected, loading, error, fetchModel, selectNode, findById }
 })
