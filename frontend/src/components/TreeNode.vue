@@ -4,6 +4,7 @@
       class="tree-label"
       @click="handleClick"
       @dblclick.stop="startEdit"
+      @contextmenu.prevent="openCtx"
       @mouseenter="hovered = true"
       @mouseleave="hovered = false"
     >
@@ -63,12 +64,21 @@
         :node="child"
       />
     </ul>
+
+    <!-- Context menu -->
+    <TreeContextMenu
+      ref="ctxRef"
+      :node="node"
+      :is-root="isRoot"
+      @start-edit="startEdit"
+    />
   </li>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { useModelStore } from '../stores/model'
+import TreeContextMenu from './TreeContextMenu.vue'
 
 const props = defineProps({
   node:   { type: Object,  required: true },
@@ -81,6 +91,11 @@ const isEditing    = ref(false)
 const editValue    = ref('')
 const editInputRef = ref(null)
 const isOpen       = ref(false)
+const ctxRef       = ref(null)
+
+function openCtx(e) {
+  ctxRef.value?.open(e.clientX, e.clientY)
+}
 
 // Start editing when store.editingNodeId matches this node
 watch(() => store.editingNodeId, async (id) => {

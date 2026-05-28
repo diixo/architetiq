@@ -4,6 +4,7 @@ import tempfile
 from unittest.mock import patch
 from django.test import TestCase, Client
 from django.core.files.uploadedfile import SimpleUploadedFile
+from app_main.views import _DEFAULT_MODEL, _parse_archimate
 
 
 ARCHIMATE_XML = (
@@ -222,3 +223,86 @@ class ApiModelTests(TestCase):
         with self._patch():
             r = self.client.post('/upload/', {})
         self.assertEqual(r.status_code, 400)
+
+
+class FolderTypeTests(TestCase):
+    """folder_type сохраняется при парсинге и в дефолтной модели."""
+
+    def test_default_model_has_folder_types(self):
+        """Все папки дефолтной модели имеют folder_type."""
+        expected = {
+            'Strategy': 'strategy',
+            'Business': 'business',
+            'Application': 'application',
+            'Technology And Physical': 'technology',
+            'Motivation': 'motivation',
+            'Implementation and Migration': 'implementation_migration',
+            'Other': 'other',
+            'Relations': 'relations',
+            'Views': 'diagrams',
+        }
+        for folder in _DEFAULT_MODEL['children']:
+            self.assertIn('folder_type', folder,
+                          f"folder_type missing for {folder['name']}")
+            self.assertEqual(folder['folder_type'], expected[folder['name']])
+
+    def test_native_archimate_preserves_folder_type(self):
+        """Парсинг .archimate сохраняет folder_type из атрибута type."""
+        xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+            b' name="M" id="m1">'
+            b'<folder name="Business" type="business" id="f1">'
+            b'<element xsi:type="archimate:BusinessActor" id="e1" name="Actor"/>'
+            b'</folder>'
+            b'<folder name="Strategy" type="strategy" id="f2"/>'
+            b'</archimate:model>'
+        )
+        model = _parse_archimate(xml)
+        business = next(c for c in model['children'] if c['name'] == 'Business')
+        strategy = next(c for c in model['children'] if c['name'] == 'Strategy')
+        self.assertEqual(business.get('folder_type'), 'business')
+        self.assertEqual(strategy.get('folder_type'), 'strategy')
+
+    def test_subfolder_without_type_has_no_folder_type(self):
+        """Вложенная папка без атрибута type не получает folder_type."""
+        xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+            b' name="M" id="m1">'
+            b'<folder name="Business" type="business" id="f1">'
+            b'<folder name="SubGroup" id="f2">'
+            b'<element xsi:type="archimate:BusinessActor" id="e1" name="Actor"/>'
+            b'</folder>'
+            b'</folder>'
+            b'</archimate:model>'
+        )
+        model = _parse_archimate(xml)
+        business = next(c for c in model['children'] if c['name'] == 'Business')
+        subgroup = next(c for c in business['children'] if c['name'] == 'SubGroup')
+        self.assertNotIn('folder_type', subgroup)
+
+    def test_folder_type_survives_save_and_load(self):
+        """folder_type сохраняется в model.json и загружается обратно."""
+        import tempfile
+        from unittest.mock import patch
+        tmpdir = tempfile.mkdtemp()
+        model_file = os.path.join(tmpdir, 'model.json')
+        payload = {
+            'name': 'Test', 'type': 'model',
+            'children': [
+                {'name': 'Business', 'type': 'node', 'folder_type': 'business',
+                 'id': 'f1', 'children': []}
+            ]
+        }
+        client = Client(enforce_csrf_checks=False)
+        with patch.multiple('app_main.views',
+                            _MODEL_FILE=model_file,
+                            _GRAFICO_DIR='/nonexistent'):
+            client.post('/api/model/save/', json.dumps(payload),
+                        content_type='application/json')
+            r = client.get('/api/model/')
+        folder = r.json()['children'][0]
+        self.assertEqual(folder.get('folder_type'), 'business')

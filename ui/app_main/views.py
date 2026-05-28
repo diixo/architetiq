@@ -12,15 +12,15 @@ _DEFAULT_MODEL = {
     "name": "*New Model",
     "type": "model",
     "children": [
-        {"name": "Strategy", "type": "node", "children": []},
-        {"name": "Business", "type": "node", "children": []},
-        {"name": "Application", "type": "node", "children": []},
-        {"name": "Technology And Physical", "type": "node", "children": []},
-        {"name": "Motivation", "type": "node", "children": []},
-        {"name": "Implementation and Migration", "type": "node", "children": []},
-        {"name": "Other", "type": "node", "children": []},
-        {"name": "Relations", "type": "node", "children": []},
-        {"name": "Views", "type": "node", "children": []},
+        {"name": "Strategy",                     "type": "node", "folder_type": "strategy",                "children": []},
+        {"name": "Business",                     "type": "node", "folder_type": "business",                "children": []},
+        {"name": "Application",                  "type": "node", "folder_type": "application",             "children": []},
+        {"name": "Technology And Physical",      "type": "node", "folder_type": "technology",              "children": []},
+        {"name": "Motivation",                   "type": "node", "folder_type": "motivation",              "children": []},
+        {"name": "Implementation and Migration", "type": "node", "folder_type": "implementation_migration","children": []},
+        {"name": "Other",                        "type": "node", "folder_type": "other",                   "children": []},
+        {"name": "Relations",                    "type": "node", "folder_type": "relations",               "children": []},
+        {"name": "Views",                        "type": "node", "folder_type": "diagrams",                "children": []},
     ]
 }
 
@@ -80,12 +80,16 @@ def _parse_native(root):
                     "documentation": child.get("documentation", ""),
                     "children": [],
                 })
-        return {
+        node = {
             "name": elem.get("name", ""),
             "type": "node",
             "id": elem.get("id", ""),
             "children": children,
         }
+        ft = elem.get("type", "")   # e.g. "business", "strategy"
+        if ft:
+            node["folder_type"] = ft
+        return node
 
     return {
         "name": root.get("name", "*New Model"),
@@ -188,7 +192,8 @@ def _parse_grafico(model_dir):
         folder_xml = os.path.join(dirpath, "folder.xml")
         folder_elem = ET.parse(folder_xml).getroot()
         folder_name = folder_elem.get("name", os.path.basename(dirpath))
-        folder_id = folder_elem.get("id", "")
+        folder_id   = folder_elem.get("id", "")
+        folder_type = folder_elem.get("type", "")   # e.g. "business", "strategy"
 
         children = []
         for entry in sorted(os.scandir(dirpath), key=lambda e: e.name):
@@ -216,12 +221,15 @@ def _parse_grafico(model_dir):
                     "children": [],
                 })
 
-        return {
+        node = {
             "name": folder_name,
             "type": "node",
             "id": folder_id,
             "children": children,
         }
+        if folder_type:
+            node["folder_type"] = folder_type
+        return node
 
     children = [
         parse_dir(e.path)

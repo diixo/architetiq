@@ -8,7 +8,8 @@
       "name": "Application",
       "type": "node",
       "id": "3f0dfc8e-21d5-4eff-a1d2-f58dd00cc0f5",
-      "children": []
+      "children": [],
+      "folder_type": "application"
     },
     {
       "name": "Business",
@@ -3407,7 +3408,8 @@
           "documentation": "Identify and agree interfaces of the project with other (sub-) projects, organizational units and other affected stakeholders and monitoragreed commitments.\r\nNOTE 9: Project interfaces relate to engineering, management and supporting processes",
           "children": []
         }
-      ]
+      ],
+      "folder_type": "business"
     },
     {
       "name": "Views",
@@ -4270,13 +4272,15 @@
             }
           ]
         }
-      ]
+      ],
+      "folder_type": "diagrams"
     },
     {
       "name": "Implementation & Migration",
       "type": "node",
       "id": "19cd387e-3c4f-4c58-802e-c845aa32c04c",
-      "children": []
+      "children": [],
+      "folder_type": "implementation_migration"
     },
     {
       "name": "Motivation",
@@ -6003,31 +6007,36 @@
           "documentation": "",
           "children": []
         }
-      ]
+      ],
+      "folder_type": "motivation"
     },
     {
       "name": "Other",
       "type": "node",
       "id": "68153e02-f6d6-431a-82b1-a849bf65f404",
-      "children": []
+      "children": [],
+      "folder_type": "other"
     },
     {
       "name": "Relations",
       "type": "node",
       "id": "7e57dd08-3d97-45ba-afb5-933d2c43d5ac",
-      "children": []
+      "children": [],
+      "folder_type": "relations"
     },
     {
       "name": "Strategy",
       "type": "node",
       "id": "ed1ea6ff-fc76-401f-992d-d81fb4ef0ef9",
-      "children": []
+      "children": [],
+      "folder_type": "strategy"
     },
     {
       "name": "Technology & Physical",
       "type": "node",
       "id": "e2b007e6-80a8-4084-97d7-f58de5162c75",
-      "children": []
+      "children": [],
+      "folder_type": "technology"
     }
   ]
 }

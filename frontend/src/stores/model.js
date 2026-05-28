@@ -43,6 +43,24 @@ export const useModelStore = defineStore('model', () => {
     editingNodeId.value = id
   }
 
+  function addElement(parentId, elementType) {
+    const parent = findById(parentId)
+    if (!parent) return
+    const id = genId()
+    const newEl = {
+      id,
+      name: elementType.replace(/([A-Z])/g, ' $1').trim(),
+      type: 'element',
+      element_type: elementType,
+      documentation: '',
+      children: [],
+    }
+    parent.children = parent.children || []
+    parent.children.push(newEl)
+    editingNodeId.value = id
+    saveModel()
+  }
+
   function csrfToken() {
     const m = document.cookie.match(/csrftoken=([^;]+)/)
     return m ? m[1] : ''
@@ -110,9 +128,24 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
+  function getNodePath(id) {
+    if (!model.value || !id) return []
+    function find(node, target, path) {
+      const p = [...path, node.name]
+      if (node.id === target) return p
+      for (const c of (node.children || [])) {
+        const r = find(c, target, p)
+        if (r) return r
+      }
+      return null
+    }
+    const full = find(model.value, id, []) || []
+    return full.slice(1) // skip root model name
+  }
+
   return {
     model, selected, loading, error, filterQuery, editingNodeId,
-    fetchModel, selectNode, findById, resetModel, saveModel,
-    renameNode, deleteNode, addChildFolder,
+    fetchModel, selectNode, findById, getNodePath, resetModel, saveModel,
+    renameNode, deleteNode, addChildFolder, addElement,
   }
 })
