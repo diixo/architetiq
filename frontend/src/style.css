@@ -1,0 +1,97 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+#app, .app-shell {
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+.px-header { padding-left: 1.75rem; padding-right: 1.75rem; }
+.py-header { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+
+/* ── Horizontal menu ── */
+.horizontal-menu-wrapper {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.horizontal-menu .nav-link {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.horizontal-menu .nav-link.active,
+.horizontal-menu .nav-link:hover { color: #712cf9; }
+
+/* ── Layout ── */
+.app-layout {
+  flex: 1;
+  overflow: hidden;
+}
+.sidebar {
+  width: 320px;
+  min-width: 220px;
+  border-right: 1px solid #dee2e6;
+  background: #fff;
+}
+
+/* ── Panels ── */
+.panel { background: #fff; }
+.root-panel { border-radius: 0; height: 100%; }
+.panel-heading {
+  padding: 0.4rem 0.75rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.root-panel-body { padding: 0.5rem; }
+
+/* ── Tree ── */
+.tree, .tree-children { list-style: none; padding-left: 1rem; margin: 0; }
+.tree { padding-left: 0; }
+
+.tree li { user-select: none; }
+
+.tree-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1px 0.25rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.tree-label:hover { background: #f1f3f5; }
+
+.tree-name { flex: 1; }
+.tree-name.text-primary { color: #712cf9 !important; }
+
+.tree-caret {
+  font-size: 0.65rem;
+  color: #adb5bd;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+  width: 0.75rem;
+}
+.tree-caret-open { transform: rotate(90deg); }
+
+.tree-icon-folder  { color: #ffc107; font-size: 0.85rem; flex-shrink: 0; }
+.tree-icon-view    { color: #0d6efd; font-size: 0.8rem;  flex-shrink: 0; }
+.tree-icon-element { color: #6c757d; font-size: 0.75rem; flex-shrink: 0; }
