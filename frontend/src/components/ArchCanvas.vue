@@ -80,6 +80,57 @@ function nodeColor(elementType) {
   return LAYER_COLOR[elementType] || '#ffffff'
 }
 
+// ── ArchiMate type abbreviations ─────────────────────────────────────────────
+const TYPE_ABBR = {
+  // Business — active structure
+  BusinessActor:'BAc', BusinessRole:'BRo', BusinessCollaboration:'BCo',
+  BusinessInterface:'BIn',
+  // Business — behavior
+  BusinessProcess:'BPr', BusinessFunction:'BFn', BusinessInteraction:'BIt',
+  BusinessEvent:'BEv', BusinessService:'BSv',
+  // Business — passive
+  BusinessObject:'BOb', Contract:'Con', Representation:'Rep', Product:'Prd',
+  // Application — active
+  ApplicationComponent:'ACo', ApplicationCollaboration:'ACl',
+  ApplicationInterface:'AIn',
+  // Application — behavior
+  ApplicationFunction:'AFn', ApplicationInteraction:'AIt',
+  ApplicationProcess:'APr', ApplicationEvent:'AEv', ApplicationService:'ASv',
+  // Application — passive
+  DataObject:'DOb',
+  // Technology — active
+  Node:'Nod', Device:'Dev', SystemSoftware:'SSw',
+  TechnologyCollaboration:'TCo', TechnologyInterface:'TIn',
+  CommunicationNetwork:'CNt', Path:'Pth',
+  // Technology — behavior
+  TechnologyFunction:'TFn', TechnologyInteraction:'TIt',
+  TechnologyProcess:'TPr', TechnologyEvent:'TEv', TechnologyService:'TSv',
+  // Technology — passive
+  Artifact:'Art', Equipment:'Eqp', Facility:'Fac',
+  DistributionNetwork:'DNt', Material:'Mat',
+  // Motivation
+  Stakeholder:'Stk', Driver:'Drv', Assessment:'Asm', Goal:'Gol',
+  Outcome:'Out', Principle:'Prn', Requirement:'Req', Constraint:'Cns',
+  Meaning:'Mng', Value:'Val',
+  // Implementation
+  WorkPackage:'WPk', Deliverable:'Del', ImplementationEvent:'IEv',
+  Plateau:'Plt', Gap:'Gap',
+  // Strategy
+  Resource:'Res', Capability:'Cap', CourseOfAction:'CoA', ValueStream:'VSt',
+}
+
+// Passive structure elements — dashed border in ArchiMate notation
+const PASSIVE_TYPES = new Set([
+  'BusinessObject','Contract','Representation','Product',
+  'DataObject','Artifact','Material','Equipment','Facility',
+])
+
+const ELEMENT_MARKUP = [
+  { tagName: 'rect',    selector: 'body' },
+  { tagName: 'text',    selector: 'label' },
+  { tagName: 'text',    selector: 'typeTag' },
+]
+
 // ── Graph init ────────────────────────────────────────────────────────────────
 function initGraph() {
   if (!containerRef.value) return
@@ -142,16 +193,32 @@ function renderDiagram() {
         },
       })
     } else if (n.type === 'element') {
+      const abbr   = TYPE_ABBR[n.element_type] || n.element_type.slice(0, 3)
+      const dashed = PASSIVE_TYPES.has(n.element_type)
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 1,
-        label: n.name,
+        markup: ELEMENT_MARKUP,
         data: { type: 'element', element_id: n.element_id,
                 element_type: n.element_type, name: n.name, id: n.element_id },
         attrs: {
-          body:  { fill: nodeColor(n.element_type), stroke:'#999',
-                   strokeWidth:1, rx:2, ry:2 },
-          label: { fontSize:10, fill:'#222', textWrap: wrap },
+          body: {
+            fill: nodeColor(n.element_type),
+            stroke: '#888', strokeWidth: 1, rx: 2, ry: 2,
+            ...(dashed ? { strokeDasharray: '5 3' } : {}),
+          },
+          label: {
+            fontSize: 10, fill: '#222',
+            refX: '50%', refY: '50%',
+            textAnchor: 'middle', textVerticalAnchor: 'middle',
+            textWrap: { width: n.width - 16, height: n.height - 16, ellipsis: true },
+          },
+          typeTag: {
+            text: abbr,
+            fontSize: 7, fill: '#777', fontFamily: 'monospace',
+            textAnchor: 'end', textVerticalAnchor: 'top',
+            refX: '100%', refX2: -3, refY: 3,
+          },
         },
       })
     } else if (n.type === 'note') {
