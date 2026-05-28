@@ -3,7 +3,17 @@
     <div class="panel-heading d-flex align-items-center gap-2">
       <b>{{ title }}</b>
       <span v-if="loading" class="text-muted ms-1" style="font-size:0.75rem;">Loading…</span>
-      <div class="ms-auto d-flex gap-1" v-if="diagramData">
+      <div class="ms-auto d-flex gap-1 align-items-center" v-if="diagramData">
+        <!-- Save indicator + button -->
+        <span v-if="isDirty" class="text-muted" style="font-size:0.7rem;">unsaved</span>
+        <button
+          class="btn btn-sm py-0 px-2"
+          :class="isDirty ? 'btn-warning' : 'btn-light border'"
+          title="Save diagram layout"
+          @click="saveLayout"
+        >
+          <i class="bi bi-floppy" style="font-size:0.75rem;"></i>
+        </button>
         <button class="btn btn-sm btn-light border py-0 px-1" title="Fit" @click="fitView">
           <i class="bi bi-fullscreen" style="font-size:0.75rem;"></i>
         </button>
@@ -33,12 +43,20 @@ import { Graph } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 
-const store   = useModelStore()
-const containerRef = ref(null)
-const diagramData  = ref(null)
-const loading      = ref(false)
+const store         = useModelStore()
+const containerRef  = ref(null)
+const diagramData   = ref(null)
+const loading       = ref(false)
+const isDirty       = ref(false)
+const currentViewId = ref(null)
 let graph = null
 let resizeObserver = null
+
+// CSRF token helper
+function csrfToken() {
+  const m = document.cookie.match(/csrftoken=([^;]+)/)
+  return m ? m[1] : ''
+}
 
 const title = computed(() =>
   diagramData.value?.name || store.model?.name || 'Canvas'
@@ -227,28 +245,46 @@ function initGraph() {
             args: [{ color: '#d0d0d0', thickness: 1 }] },
     mousewheel: { enabled: true, modifiers: 'ctrl', zoomAtMousePosition: true },
     panning:    { enabled: true, modifiers: 'alt' },
-    interacting: false,
+    // ── Enable editing ────────────────────────────────────────────────────────
+    interacting: { nodeMovable: true, edgeLabelMovable: false },
+    connecting: {
+      snap: { radius: 24 },
+      allowBlank: false,
+      allowLoop:  false,
+      highlight:  true,
+      connector:  { name: 'normal' },
+      validateConnection: ({ sourceCell, targetCell }) =>
+        sourceCell !== targetCell,
+    },
   })
 
+  // Selection / PropertiesPanel
   graph.on('node:click', ({ node }) => {
     const d = node.getData()
     if (!d) return
     if (d.element_id) {
-      const full = store.findById(d.element_id)
-      store.selectNode(full || d)
+      store.selectNode(store.findById(d.element_id) || d)
     } else if (d.type === 'view' && d.id) {
-      // view_ref: resolve full view node so watch triggers loadDiagram
-      const full = store.findById(d.id)
-      store.selectNode(full || d)
+      store.selectNode(store.findById(d.id) || d)
     } else {
       store.selectNode(d)
     }
   })
 
+  // Mark dirty on any structural change
+  graph.on('node:moved',         () => { isDirty.value = true })
+  graph.on('node:resized',       () => { isDirty.value = true })
+  graph.on('edge:added',         ({ edge }) => {
+    if (!edge.getData()?.isLoaded) isDirty.value = true
+  })
+  graph.on('edge:removed',       ({ edge }) => {
+    if (!edge.getData()?.isLoaded) isDirty.value = true
+  })
+  graph.on('edge:change:vertices', () => { isDirty.value = true })
+
   resizeObserver = new ResizeObserver(() => {
-    if (containerRef.value) {
+    if (containerRef.value)
       graph.resize(containerRef.value.clientWidth, containerRef.value.clientHeight)
-    }
   })
   resizeObserver.observe(containerRef.value)
 }
@@ -343,6 +379,7 @@ function renderDiagram() {
             d: bodyPath,
             fill: nodeColor(n.element_type),
             stroke: '#888', strokeWidth: 1,
+            magnet: true,
             ...(dashed ? { strokeDasharray: '5 3' } : {}),
           },
           label: {
@@ -404,8 +441,9 @@ function renderDiagram() {
     try {
       graph.addEdge({
         id: e.id || undefined,
-        source: srcPt,          // absolute point on source border
-        target: tgtPt,          // absolute point on target border
+        source: srcPt,
+        target: tgtPt,
+        data: { isLoaded: true, type: e.type },
         ...(e.vertices?.length ? { vertices: e.vertices } : {}),
         connector: { name: 'normal' },
         attrs: {
@@ -425,7 +463,42 @@ function renderDiagram() {
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
+function extractLayout() {
+  if (!graph || !currentViewId.value) return null
+  const nodes = graph.getNodes().map(n => ({
+    id: n.id, x: n.getX(), y: n.getY(),
+    width: n.getWidth(), height: n.getHeight(),
+  }))
+  const userEdges = graph.getEdges()
+    .filter(e => !e.getData()?.isLoaded)
+    .map(e => {
+      const src = e.getSource()
+      const tgt = e.getTarget()
+      return {
+        id: e.id,
+        source_cell: src?.cell ?? null,
+        target_cell: tgt?.cell ?? null,
+        type: e.getData()?.type || '',
+        vertices: e.getVertices() || [],
+      }
+    })
+  return { view_id: currentViewId.value, nodes, user_edges: userEdges }
+}
+
+async function saveLayout() {
+  const layout = extractLayout()
+  if (!layout) return
+  const r = await fetch(`/api/diagram/${layout.view_id}/save/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+    body: JSON.stringify(layout),
+  })
+  if ((await r.json()).ok) isDirty.value = false
+}
+
 async function loadDiagram(viewId) {
+  isDirty.value = false
+  currentViewId.value = viewId
   loading.value = true
   diagramData.value = null
   try {

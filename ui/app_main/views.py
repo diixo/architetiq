@@ -24,7 +24,8 @@ _DEFAULT_MODEL = {
     ]
 }
 
-_MODEL_FILE = os.path.join(os.path.dirname(__file__), "data", "model.json")
+_MODEL_FILE    = os.path.join(os.path.dirname(__file__), "data", "model.json")
+_DIAGRAMS_DIR  = os.path.join(os.path.dirname(__file__), "data", "diagrams")
 
 _GRAFICO_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..", "data", "aspice-archi-prj", "model")
@@ -533,12 +534,38 @@ def _parse_diagram_file(xml_path, elements_index):
     }
 
 
+def _layout_path(view_id):
+    return os.path.join(_DIAGRAMS_DIR, f"{view_id}.json")
+
+
+def _apply_saved_layout(data, view_id):
+    """Merge saved node positions and user edges into parsed diagram data."""
+    path = _layout_path(view_id)
+    if not os.path.isfile(path):
+        return data
+    with open(path, encoding='utf-8') as f:
+        layout = json.load(f)
+    # Override node positions with saved values
+    pos = {n['id']: n for n in layout.get('nodes', [])}
+    for node in data['nodes']:
+        if node['id'] in pos:
+            s = pos[node['id']]
+            node.update({k: s[k] for k in ('x', 'y', 'width', 'height') if k in s})
+    # Append user-created edges (not from Archi XML)
+    existing_ids = {e['id'] for e in data['edges']}
+    for edge in layout.get('user_edges', []):
+        if edge.get('id') not in existing_ids:
+            data['edges'].append(edge)
+    return data
+
+
 def api_diagram(request, view_id):
     model = _load_model()
     diagram_file = _find_diagram_file(view_id)
     if diagram_file:
         try:
             data = _parse_diagram_file(diagram_file, _build_elements_index(model))
+            data = _apply_saved_layout(data, view_id)
             return JsonResponse(data)
         except ET.ParseError as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -557,6 +584,19 @@ def api_diagram(request, view_id):
     if node is None:
         return JsonResponse({'error': 'Not found'}, status=404)
     return JsonResponse(node)
+
+
+def api_diagram_save(request, view_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        layout = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
+    with open(_layout_path(view_id), 'w', encoding='utf-8') as f:
+        json.dump(layout, f, ensure_ascii=False, indent=2)
+    return JsonResponse({'ok': True})
 
 
 def upload_model(request):
