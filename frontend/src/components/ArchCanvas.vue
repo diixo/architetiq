@@ -355,7 +355,8 @@ function resetZoom() { graph?.zoomTo(1); graph?.centerContent() }
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => store.selected, node => {
   if (node?.type === 'view') loadDiagram(node.id)
-  else { diagramData.value = null; graph?.clearCells() }
+  // Non-view selection (element, group, note) — only updates PropertiesPanel,
+  // canvas stays showing the current diagram
 })
 
 onMounted(initGraph)
