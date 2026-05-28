@@ -42,16 +42,8 @@ def _load_model():
     if os.path.exists(_MODEL_FILE):
         with open(_MODEL_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    # First run: try Grafico folder, fall back to default
-    grafico_root = os.path.join(_GRAFICO_DIR, "folder.xml")
-    if os.path.isfile(grafico_root):
-        model = _parse_grafico(_GRAFICO_DIR)
-    else:
-        model = _DEFAULT_MODEL
-    os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
-    with open(_MODEL_FILE, "w", encoding="utf-8") as f:
-        json.dump(model, f, ensure_ascii=False, indent=2)
-    return model
+    # First run: start with empty default model
+    return _DEFAULT_MODEL
 
 
 def _local(tag):
@@ -280,6 +272,20 @@ def main(request):
 
 def api_model(request):
     return JsonResponse(_load_model())
+
+
+def api_model_load_aspice(request):
+    """Load the built-in ASPICE Grafico project."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    grafico_root = os.path.join(_GRAFICO_DIR, "folder.xml")
+    if not os.path.isfile(grafico_root):
+        return JsonResponse({'error': 'ASPICE project not found'}, status=404)
+    model = _parse_grafico(_GRAFICO_DIR)
+    os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
+    with open(_MODEL_FILE, "w", encoding="utf-8") as f:
+        json.dump(model, f, ensure_ascii=False, indent=2)
+    return JsonResponse({'ok': True, 'name': model.get('name', '')})
 
 
 def api_model_new(request):

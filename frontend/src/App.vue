@@ -68,7 +68,10 @@
           </button>
           <ul class="dropdown-menu shadow-sm" style="font-size: 0.875rem;">
             <li><a class="dropdown-item" href="#" @click.prevent="onNew">New</a></li>
-            <li><a class="dropdown-item" href="#" @click.prevent="triggerOpen">Open</a></li>
+            <li><a class="dropdown-item" href="#" @click.prevent="triggerOpen">Open…</a></li>
+            <li><a class="dropdown-item" href="#" @click.prevent="onLoadAspice">
+              <i class="bi bi-box-seam me-1"></i>Open ASPICE
+            </a></li>
             <li><a class="dropdown-item" href="#" @click.prevent="onSave">Save</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="/api/model/export/" target="_blank">Export .archimate</a></li>
@@ -152,6 +155,12 @@ function onNew() {
   if (!confirm('Reset to a new empty model? Unsaved changes will be lost.')) return
   store.resetModel()
   showToast('New model created — not saved yet')
+}
+
+async function onLoadAspice() {
+  const ok = await store.loadAspice()
+  if (ok) showToast('ASPICE project loaded')
+  else showToast('ASPICE project not found')
 }
 
 async function onSave() {

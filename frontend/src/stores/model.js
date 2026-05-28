@@ -94,6 +94,19 @@ export const useModelStore = defineStore('model', () => {
     ],
   }
 
+  async function loadAspice() {
+    const r = await fetch('/api/model/load-aspice/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken() },
+    })
+    if (r.ok) {
+      selected.value = null
+      filterQuery.value = ''
+      await fetchModel()
+    }
+    return r.ok
+  }
+
   function resetModel() {
     model.value = JSON.parse(JSON.stringify(DEFAULT_MODEL))
     selected.value = null
@@ -159,6 +172,6 @@ export const useModelStore = defineStore('model', () => {
   return {
     model, selected, loading, error, filterQuery, editingNodeId,
     fetchModel, selectNode, findById, getNodePath, findFolderByType,
-    resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement,
+    loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement,
   }
 })
