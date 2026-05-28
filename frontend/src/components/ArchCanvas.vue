@@ -45,14 +45,15 @@ const title = computed(() =>
 )
 
 // ── ArchiMate marker definitions (from Archi Java source) ────────────────────
-// Paths: tip at (0,0), body extends to positive x
+// tagName:'path' required in X6 v3 for custom SVG markers
+// Tip at (0,0), body extends to positive x
 const MK_FILL_TRI  = { name: 'block', width: 10, height: 8 }
-const MK_OPEN_TRI  = { d: 'M 10 -5 0 0 10 5 Z', fill: '#fff', stroke: 'inherit', strokeWidth: 1.5 }
-const MK_OPEN_V    = { d: 'M 8 -5 0 0 8 5',     fill: 'none', stroke: 'inherit', strokeWidth: 1.5 }
-const MK_FILL_DIA  = { d: 'M 0 0 7 -4 14 0 7 4 Z', fill: 'inherit', stroke: 'inherit' }
-const MK_OPEN_DIA  = { d: 'M 0 0 7 -4 14 0 7 4 Z', fill: '#fff',    stroke: 'inherit', strokeWidth: 1.5 }
-const MK_CIRCLE    = { name: 'circle', r: 4, fill: 'inherit', stroke: 'inherit' }
-const MK_NONE      = { fill: 'none', stroke: 'none', d: 'M 0 0' }
+const MK_OPEN_TRI  = { tagName: 'path', d: 'M 10 -5 L 0 0 L 10 5 Z',  fill: '#ffffff', stroke: '#444', strokeWidth: 1.5 }
+const MK_OPEN_V    = { tagName: 'path', d: 'M 8 -5 L 0 0 L 8 5',       fill: 'none',    stroke: '#666', strokeWidth: 1.5 }
+const MK_FILL_DIA  = { tagName: 'path', d: 'M 0 0 L 7 -4 L 14 0 L 7 4 Z', fill: '#444', stroke: '#444', strokeWidth: 1 }
+const MK_OPEN_DIA  = { tagName: 'path', d: 'M 0 0 L 7 -4 L 14 0 L 7 4 Z', fill: '#fff', stroke: '#444', strokeWidth: 1.5 }
+const MK_CIRCLE    = { name: 'circle', r: 4, fill: '#444' }
+const MK_NONE      = null
 
 // ── ArchiMate relationship → line style ──────────────────────────────────────
 const REL_STYLE = {
