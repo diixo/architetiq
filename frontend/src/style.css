@@ -78,3 +78,41 @@ mark.tree-highlight {
   border-radius: 2px;
   padding: 0;
 }
+
+.tree-edit-input {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.8125rem;
+  border: 1px solid #0d6efd;
+  border-radius: 2px;
+  outline: none;
+  background: #fff;
+}
+
+.tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.tree-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 2px;
+  color: #343a40;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 900;
+  -webkit-text-stroke: 0.3px currentColor;
+  line-height: 1;
+}
+.tree-action-btn:hover { background: #e9ecef; color: #495057; }
+.tree-action-delete:hover { background: #f8d7da; color: #dc3545; }

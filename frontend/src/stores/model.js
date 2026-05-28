@@ -7,6 +7,41 @@ export const useModelStore = defineStore('model', () => {
   const loading = ref(false)
   const error = ref(null)
   const filterQuery = ref('')
+  const editingNodeId = ref(null)
+
+  function genId() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+    })
+  }
+
+  function renameNode(id, newName) {
+    const node = findById(id)
+    if (node && newName.trim()) node.name = newName.trim()
+    saveModel()
+  }
+
+  function deleteNode(id) {
+    function removeFrom(parent) {
+      if (!parent.children) return false
+      const idx = parent.children.findIndex(c => c.id === id)
+      if (idx !== -1) { parent.children.splice(idx, 1); return true }
+      return parent.children.some(c => removeFrom(c))
+    }
+    if (model.value) removeFrom(model.value)
+    if (selected.value?.id === id) selected.value = null
+    saveModel()
+  }
+
+  function addChildFolder(parentId) {
+    const parent = findById(parentId)
+    if (!parent) return
+    const id = genId()
+    parent.children = parent.children || []
+    parent.children.push({ id, name: 'New Folder', type: 'node', children: [] })
+    editingNodeId.value = id
+  }
 
   function csrfToken() {
     const m = document.cookie.match(/csrftoken=([^;]+)/)
@@ -75,5 +110,9 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
-  return { model, selected, loading, error, filterQuery, fetchModel, selectNode, findById, resetModel, saveModel }
+  return {
+    model, selected, loading, error, filterQuery, editingNodeId,
+    fetchModel, selectNode, findById, resetModel, saveModel,
+    renameNode, deleteNode, addChildFolder,
+  }
 })

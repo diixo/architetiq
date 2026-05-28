@@ -1,13 +1,58 @@
 <template>
   <li v-if="isVisible" :class="itemClass">
-    <span class="tree-label" @click="handleClick">
+    <span
+      class="tree-label"
+      @click="handleClick"
+      @dblclick.stop="startEdit"
+      @mouseenter="hovered = true"
+      @mouseleave="hovered = false"
+    >
       <i :class="caretClass"></i>
       <i v-if="node.type === 'node'" class="bi bi-folder-fill tree-icon-folder"></i>
       <i v-else-if="node.type === 'view'" class="bi bi-diagram-3 tree-icon-view"></i>
       <i v-else class="bi bi-box tree-icon-element"></i>
-      <span class="tree-name" :class="{ 'fw-semibold': isSelected }">
+
+      <!-- Inline edit input -->
+      <input
+        v-if="isEditing"
+        ref="editInputRef"
+        v-model="editValue"
+        class="tree-edit-input"
+        @blur="confirmEdit"
+        @keyup.enter="confirmEdit"
+        @keyup.escape="cancelEdit"
+        @click.stop
+      />
+
+      <!-- Normal name display -->
+      <span v-else class="tree-name" :class="{ 'fw-semibold': isSelected }">
         <span v-if="highlightedName" v-html="highlightedName"></span>
         <template v-else>{{ node.name }}</template>
+      </span>
+
+      <!-- Hover action buttons -->
+      <span
+        v-if="hovered && !isEditing && !store.filterQuery"
+        class="tree-actions"
+        @click.stop
+      >
+        <button
+          v-if="node.type === 'node'"
+          class="tree-action-btn"
+          title="Add folder"
+          @click.stop="onAdd"
+        ><i class="bi bi-plus"></i></button>
+        <button
+          class="tree-action-btn"
+          title="Rename"
+          @click.stop="startEdit"
+        ><i class="bi bi-pencil"></i></button>
+        <button
+          v-if="!isRoot"
+          class="tree-action-btn tree-action-delete"
+          title="Delete"
+          @click.stop="onDelete"
+        ><i class="bi bi-trash3"></i></button>
       </span>
     </span>
 
@@ -22,15 +67,67 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useModelStore } from '../stores/model'
 
 const props = defineProps({
-  node: { type: Object, required: true },
+  node:   { type: Object,  required: true },
+  isRoot: { type: Boolean, default: false },
 })
 
-const store  = useModelStore()
-const isOpen = ref(false)
+const store        = useModelStore()
+const hovered      = ref(false)
+const isEditing    = ref(false)
+const editValue    = ref('')
+const editInputRef = ref(null)
+const isOpen       = ref(false)
+
+// Start editing when store.editingNodeId matches this node
+watch(() => store.editingNodeId, async (id) => {
+  if (id === props.node.id) {
+    isOpen.value = true
+    await nextTick()
+    startEdit()
+    store.editingNodeId = null
+  }
+})
+
+async function startEdit() {
+  editValue.value = props.node.name
+  isEditing.value = true
+  await nextTick()
+  editInputRef.value?.focus()
+  editInputRef.value?.select()
+}
+
+function confirmEdit() {
+  if (editValue.value.trim()) {
+    store.renameNode(props.node.id, editValue.value)
+  }
+  isEditing.value = false
+}
+
+function cancelEdit() {
+  // If name is empty (newly created folder), delete it
+  if (!props.node.name.trim()) {
+    store.deleteNode(props.node.id)
+  }
+  isEditing.value = false
+}
+
+function onAdd() {
+  isOpen.value = true
+  store.addChildFolder(props.node.id)
+}
+
+function onDelete() {
+  const label = props.node.name || 'this item'
+  const hasKids = (props.node.children || []).length > 0
+  const msg = hasKids
+    ? `Delete "${label}" and all its ${props.node.children.length} children?`
+    : `Delete "${label}"?`
+  if (confirm(msg)) store.deleteNode(props.node.id)
+}
 
 // ── Filter helpers ────────────────────────────────────────────────────────────
 function treeContains(node, q) {
@@ -40,8 +137,7 @@ function treeContains(node, q) {
 
 const isVisible = computed(() => {
   const q = store.filterQuery?.toLowerCase()
-  if (!q) return true
-  return treeContains(props.node, q)
+  return !q || treeContains(props.node, q)
 })
 
 const isMatch = computed(() => {
@@ -49,33 +145,25 @@ const isMatch = computed(() => {
   return q ? props.node.name.toLowerCase().includes(q) : false
 })
 
-// Auto-expand folders that contain a match when filtering
 const effectiveOpen = computed(() => {
   const q = store.filterQuery?.toLowerCase()
-  if (q && hasChildren.value) {
-    return (props.node.children || []).some(c => treeContains(c, q))
-  }
+  if (q && hasChildren.value) return (props.node.children || []).some(c => treeContains(c, q))
   return isOpen.value
 })
 
-// Highlight matched substring in node name
 const highlightedName = computed(() => {
   const q = store.filterQuery
   if (!q || !isMatch.value) return null
   const lower = props.node.name.toLowerCase()
-  const idx   = lower.indexOf(q.toLowerCase())
+  const idx = lower.indexOf(q.toLowerCase())
   if (idx === -1) return null
-  const before = escHtml(props.node.name.slice(0, idx))
-  const match  = escHtml(props.node.name.slice(idx, idx + q.length))
-  const after  = escHtml(props.node.name.slice(idx + q.length))
-  return `${before}<mark class="tree-highlight">${match}</mark>${after}`
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  return esc(props.node.name.slice(0, idx))
+    + `<mark class="tree-highlight">${esc(props.node.name.slice(idx, idx + q.length))}</mark>`
+    + esc(props.node.name.slice(idx + q.length))
 })
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-}
-
-// ── Existing logic ────────────────────────────────────────────────────────────
+// ── Standard tree logic ───────────────────────────────────────────────────────
 const hasChildren = computed(() => props.node.children?.length > 0)
 const isSelected  = computed(() => store.selected?.id === props.node.id && props.node.id)
 
