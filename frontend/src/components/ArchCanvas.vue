@@ -67,6 +67,44 @@ function edgeStyle(relType) {
   return REL_STYLE[relType] || { stroke: '#777', strokeWidth: 1, dash: '' }
 }
 
+// ── OrthogonalAnchor — точки входу/виходу стрілок (як в Archi OrthogonalAnchor.java) ──
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)) }
+
+function orthogonalPoints(src, tgt) {
+  const srcR = src.x + src.width
+  const srcB = src.y + src.height
+  const tgtR = tgt.x + tgt.width
+  const tgtB = tgt.y + tgt.height
+  const sCX  = src.x + src.width  / 2
+  const sCY  = src.y + src.height / 2
+  const tCX  = tgt.x + tgt.width  / 2
+  const tCY  = tgt.y + tgt.height / 2
+
+  // Gap between bounding boxes (0 if overlapping in that axis)
+  // Correct approach: compare GAPS, not center distances
+  // Wide/tall elements have far-offset centers which misleads center-based dx/dy
+  const hGap = Math.max(0, tgt.x - srcR, src.x - tgtR)
+  const vGap = Math.max(0, tgt.y - srcB, src.y - tgtB)
+
+  if (vGap >= hGap) {
+    // Vertical dominant: arrows exit/enter top or bottom
+    // Both points share source-center X → parallel vertical arrows
+    const sx = clamp(sCX, src.x, srcR)
+    const tx = clamp(sCX, tgt.x, tgtR)
+    return tgt.y >= src.y
+      ? { srcPt: { x: sx, y: srcB  }, tgtPt: { x: tx, y: tgt.y } }  // tgt below
+      : { srcPt: { x: sx, y: src.y }, tgtPt: { x: tx, y: tgtB  } }  // tgt above
+  } else {
+    // Horizontal dominant: arrows exit/enter left or right
+    // Both points share target-center Y → parallel horizontal arrows
+    const sy = clamp(tCY, src.y, srcB)
+    const ty = clamp(tCY, tgt.y, tgtB)
+    return tgt.x >= src.x
+      ? { srcPt: { x: srcR,  y: sy }, tgtPt: { x: tgt.x, y: ty } }  // tgt right
+      : { srcPt: { x: src.x, y: sy }, tgtPt: { x: tgtR,  y: ty } }  // tgt left
+  }
+}
+
 // ── ArchiMate layer colours (Archi defaults) ─────────────────────────────────
 const LAYER_COLOR = {
   // Business
@@ -258,12 +296,19 @@ function renderDiagram() {
     if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue
     // Hide connections where containment is already shown visually (Archi behavior)
     if (parentOf[e.target] === e.source || parentOf[e.source] === e.target) continue
+
     const s = edgeStyle(e.type)
+    const srcNode = nodeMap[e.source]
+    const tgtNode = nodeMap[e.target]
+
+    // Use OrthogonalAnchor: connection enters/exits at border aligned with target/source center
+    const { srcPt, tgtPt } = orthogonalPoints(srcNode, tgtNode)
+
     try {
       graph.addEdge({
         id: e.id || undefined,
-        source: e.source,
-        target: e.target,
+        source: srcPt,          // absolute point on source border
+        target: tgtPt,          // absolute point on target border
         ...(e.vertices?.length ? { vertices: e.vertices } : {}),
         connector: { name: 'normal' },
         attrs: {
