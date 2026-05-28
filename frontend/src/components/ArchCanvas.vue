@@ -252,14 +252,13 @@ function renderDiagram() {
         id: e.id || undefined,
         source: e.source,
         target: e.target,
-        vertices: e.vertices || [],
-        connector: { name: 'straight' },
-        router:    { name: 'normal' },
+        ...(e.vertices?.length ? { vertices: e.vertices } : {}),
+        connector: { name: 'normal' },
         attrs: {
           line: {
             stroke: s.stroke,
             strokeWidth: s.strokeWidth,
-            strokeDasharray: s.dash || null,
+            ...(s.dash ? { strokeDasharray: s.dash } : {}),
             targetMarker: { name: 'block', width: 8, height: 5 },
           },
         },

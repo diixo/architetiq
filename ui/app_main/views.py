@@ -415,20 +415,24 @@ def _parse_diagram_file(xml_path, elements_index):
         for sub in elem:
             stag = _local(sub.tag)
             if stag in ('sourceConnection', 'sourceConnections'):
-                ct = sub.get(_XSI_TYPE, '').split(':')[-1]
-                # Collect raw relative bendpoints
+                # Collect raw relative bendpoints + resolve ArchiMate relation type
                 raw_bps = []
+                rel_type = ''
                 for bp in sub:
-                    if _local(bp.tag) == 'bendpoint':
+                    bp_tag = _local(bp.tag)
+                    if bp_tag == 'bendpoint':
                         raw_bps.append({
                             'startX': int(bp.get('startX', 0)),
                             'startY': int(bp.get('startY', 0)),
                             'endX':   int(bp.get('endX', 0)),
                             'endY':   int(bp.get('endY', 0)),
                         })
+                    elif bp_tag == 'archimateRelationship':
+                        # e.g. xsi:type="archimate:RealizationRelationship"
+                        rel_type = _el_type(bp.get(_XSI_TYPE, ''))
                 edges.append({
                     'id':     sub.get('id', ''),
-                    'type':   ct,
+                    'type':   rel_type,
                     'source': sub.get('source', ''),
                     'target': sub.get('target', ''),
                     '_raw_bps': raw_bps,
