@@ -58,3 +58,23 @@ html, body { height: 100%; margin: 0; }
 
 .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-children { padding-left: 1rem; }
+
+.tree-filter-input {
+  height: 20px !important;
+  padding: 1px 6px !important;
+  font-size: 0.8rem !important;
+  border-radius: 3px;
+}
+.tree-search-btn {
+  line-height: 1;
+  color: #adb5bd !important;
+  text-decoration: none;
+}
+.tree-search-btn:hover { color: #495057 !important; }
+
+mark.tree-highlight {
+  background: #fff176;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0;
+}

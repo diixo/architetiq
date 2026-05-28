@@ -6,6 +6,7 @@ export const useModelStore = defineStore('model', () => {
   const selected = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const filterQuery = ref('')
 
   function csrfToken() {
     const m = document.cookie.match(/csrftoken=([^;]+)/)
@@ -74,5 +75,5 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
-  return { model, selected, loading, error, fetchModel, selectNode, findById, resetModel, saveModel }
+  return { model, selected, loading, error, filterQuery, fetchModel, selectNode, findById, resetModel, saveModel }
 })
