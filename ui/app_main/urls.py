@@ -6,7 +6,6 @@ app_name = "app_main"
 
 urlpatterns = [
     path("api/model/",        views.api_model,        name="api_model"),
-    path("api/model/new/",    views.api_model_new,    name="api_model_new"),
     path("api/model/save/",   views.api_model_save,   name="api_model_save"),
     path("api/model/export/", views.api_model_export, name="api_model_export"),
     path("api/diagram/<str:view_id>/", views.api_diagram, name="api_diagram"),

@@ -24,21 +24,35 @@ export const useModelStore = defineStore('model', () => {
     }
   }
 
-  async function resetModel() {
-    const r = await fetch('/api/model/new/', {
-      method: 'POST',
-      headers: { 'X-CSRFToken': csrfToken() },
-    })
-    if (r.ok) {
-      selected.value = null
-      await fetchModel()
-    }
+  const DEFAULT_MODEL = {
+    name: '*New Model',
+    type: 'model',
+    children: [
+      { name: 'Strategy',                     type: 'node', children: [] },
+      { name: 'Business',                     type: 'node', children: [] },
+      { name: 'Application',                  type: 'node', children: [] },
+      { name: 'Technology And Physical',      type: 'node', children: [] },
+      { name: 'Motivation',                   type: 'node', children: [] },
+      { name: 'Implementation and Migration', type: 'node', children: [] },
+      { name: 'Other',                        type: 'node', children: [] },
+      { name: 'Relations',                    type: 'node', children: [] },
+      { name: 'Views',                        type: 'node', children: [] },
+    ],
+  }
+
+  function resetModel() {
+    model.value = JSON.parse(JSON.stringify(DEFAULT_MODEL))
+    selected.value = null
   }
 
   async function saveModel() {
     const r = await fetch('/api/model/save/', {
       method: 'POST',
-      headers: { 'X-CSRFToken': csrfToken() },
+      headers: {
+        'X-CSRFToken': csrfToken(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(model.value),
     })
     return r.ok ? (await r.json()) : null
   }

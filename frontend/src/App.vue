@@ -101,10 +101,10 @@ function triggerOpen() {
   fileInputRef.value?.click()
 }
 
-async function onNew() {
-  if (!confirm('Reset to a new empty model?')) return
-  await store.resetModel()
-  showToast('New model created')
+function onNew() {
+  if (!confirm('Reset to a new empty model? Unsaved changes will be lost.')) return
+  store.resetModel()
+  showToast('New model created — not saved yet')
 }
 
 async function onSave() {

@@ -285,8 +285,14 @@ def api_model_new(request):
 def api_model_save(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    model = _load_model()
-    return JsonResponse({'ok': True, 'name': model.get('name', '')})
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
+    with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return JsonResponse({'ok': True, 'name': data.get('name', '')})
 
 
 _FOLDER_TYPE = {
