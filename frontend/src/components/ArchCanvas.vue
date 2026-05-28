@@ -161,6 +161,10 @@ function renderDiagram() {
   const nodeIds = new Set(nodes.map(n => n.id))
   // Index for looking up parent absolute positions (for relative coord calc)
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]))
+  // Index: child_id → parent_id  (for hiding containment connections)
+  const parentOf = Object.fromEntries(
+    nodes.filter(n => n.parent_id).map(n => [n.id, n.parent_id])
+  )
 
   for (const n of nodes) {
     const wrap = { width: n.width - 8, height: n.height - 6, ellipsis: true }
@@ -255,6 +259,8 @@ function renderDiagram() {
   for (const e of edges) {
     if (!e.source || !e.target) continue
     if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue
+    // Hide connections where containment is already shown visually (Archi behavior)
+    if (parentOf[e.target] === e.source || parentOf[e.source] === e.target) continue
     const s = edgeStyle(e.type)
     try {
       graph.addEdge({
