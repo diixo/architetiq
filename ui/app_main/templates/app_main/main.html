@@ -16,18 +16,19 @@
           </div>
           <div class="panel-body root-panel-body p-2">
               <b>
-                <a href="#" class="text-decoration-none text-dark">*New Model</a>
+                <a href="#" class="text-decoration-none text-dark">{{ model.name }}</a>
               </b>
               <ul class="tree ms-3" style="font-size: 0.875rem;">
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Strategy</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Business</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Application</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Technology And Physical</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Motivation</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Implementation and Migration</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Other</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Relations</span><ul></ul></li>
-                <li class="tree-folder"><span><i class="bi bi-caret-right-fill"></i> Views</span><ul></ul></li>
+                {% for node in model.children %}
+                <li class="tree-folder">
+                  <span>
+                    <i class="bi bi-caret-right-fill"></i>
+                    {% if node.type == "node" %}<i class="bi bi-folder-fill" style="color: #ffc107;"></i>{% endif %}
+                    {{ node.name }}
+                  </span>
+                  <ul></ul>
+                </li>
+                {% endfor %}
               </ul>
           </div>
         </div>
@@ -42,7 +43,7 @@
       <!-- Main content -->
       <div class="flex-grow-1 overflow-auto">
         <div class="panel root-panel">
-          <div class="panel-heading"><b>*New Model</b></div>
+          <div class="panel-heading"><b>{{ model.name }}</b></div>
           <div class="panel-body root-panel-body">
             <ul class="nav nav-tabs mb-3" role="tablist">
               <li class="nav-item">
