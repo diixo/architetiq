@@ -17,7 +17,7 @@
             :key="et"
             class="palette-type-icon"
             viewBox="0 0 20 20"
-            width="22" height="22"
+            width="20" height="20"
             draggable="true"
             :title="humanizeType(et)"
             @dragstart="onDragStart($event, et, layer.folder_type)"
