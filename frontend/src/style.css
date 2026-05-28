@@ -61,7 +61,7 @@ html, body { height: 100%; margin: 0; }
 
 /* ── Canvas Palette ──────────────────────────────────────────────────────── */
 .palette-panel {
-  width: 162px;
+  width: 100px;
   flex-shrink: 0;
   background: #fff;
   border-left: 1px solid #dee2e6;
@@ -71,6 +71,13 @@ html, body { height: 100%; margin: 0; }
   overflow: hidden;
 }
 .palette-panel.palette-collapsed { width: 22px; }
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 22px);
+  gap: 3px;
+  padding: 2px 0 4px 0;
+}
 
 .palette-toggle {
   position: absolute;
@@ -91,7 +98,7 @@ html, body { height: 100%; margin: 0; }
 .palette-toggle:hover { color: #343a40; }
 
 .palette-content {
-  width: 162px;
+  width: 100px;
   padding: 4px 0 8px 22px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -122,7 +129,7 @@ html, body { height: 100%; margin: 0; }
 .palette-rel-select {
   font-size: 0.75rem !important;
   padding: 2px 4px !important;
-  width: 134px;
+  width: 72px;
   margin-bottom: 2px;
 }
 
@@ -143,7 +150,14 @@ html, body { height: 100%; margin: 0; }
 .palette-item:hover { background: #f1f3f5; color: #212529; }
 .palette-item:active { cursor: grabbing; }
 .palette-item-icon { font-size: 0.65rem; color: #adb5bd; flex-shrink: 0; }
-.palette-type-icon { flex-shrink: 0; display: block; }
+.palette-type-icon {
+  flex-shrink: 0;
+  display: block;
+  cursor: grab;
+  border-radius: 2px;
+}
+.palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-radius: 2px; }
+.palette-type-icon:active { cursor: grabbing; }
 
 /* Context menu */
 .tree-ctx-menu {

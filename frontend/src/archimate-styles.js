@@ -27,6 +27,19 @@ export const LAYER_COLOR = {
   Plateau:'#ffe0e0', Gap:'#ffe0e0',
   // Strategy (pale tan  #f5deaa)
   Resource:'#f5deaa', Capability:'#f5deaa', CourseOfAction:'#f5deaa', ValueStream:'#f5deaa',
+  // Other
+  Location:'#ffffff', Grouping:'#ffffff',
+  // Physical
+  DistributionNetwork:'#b5ffb5',
+  // Relations (light gray background)
+  AssociationRelationship:'#f8f9fa', CompositionRelationship:'#f8f9fa',
+  AggregationRelationship:'#f8f9fa', AssignmentRelationship:'#f8f9fa',
+  RealizationRelationship:'#f8f9fa', ServingRelationship:'#f8f9fa',
+  AccessRelationship:'#f8f9fa', InfluenceRelationship:'#f8f9fa',
+  TriggeringRelationship:'#f8f9fa', FlowRelationship:'#f8f9fa',
+  SpecializationRelationship:'#f8f9fa', Junction:'#f8f9fa',
+  // View extras
+  Note:'#fffde7', DiagramGroup:'#e3f2fd',
 }
 
 export function nodeColor(elementType) {

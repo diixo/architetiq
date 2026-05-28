@@ -69,4 +69,25 @@ export const ELEMENT_ICON = {
   Capability:     'am-capability',
   CourseOfAction: 'am-courseofaction',
   ValueStream:    'am-valuestream',
+  // Other
+  Location:       'am-facility',
+  Grouping:       'am-collab',
+  // Physical
+  DistributionNetwork: 'am-network',
+  // Relations (shown in palette — reuse marker-like icons)
+  AssociationRelationship:    'am-path',
+  CompositionRelationship:    'am-fill-dia',
+  AggregationRelationship:    'am-open-dia',
+  AssignmentRelationship:     'am-circle',
+  RealizationRelationship:    'am-open-tri',
+  ServingRelationship:        'am-open-v',
+  AccessRelationship:         'am-open-v',
+  InfluenceRelationship:      'am-open-v',
+  TriggeringRelationship:     'am-fill-tri',
+  FlowRelationship:           'am-fill-tri',
+  SpecializationRelationship: 'am-open-tri',
+  Junction:                   'am-outcome',
+  // View extras
+  Note:           'am-meaning',
+  DiagramGroup:   'am-capability',
 }

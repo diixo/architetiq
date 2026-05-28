@@ -28,7 +28,7 @@ export const FOLDER_ELEMENTS = {
     'WorkPackage', 'Deliverable', 'ImplementationEvent', 'Plateau', 'Gap',
   ],
   other: [
-    'Location', 'Grouping',
+    'Location', 'Grouping', 'Junction',
   ],
   relations: [],
   diagrams: [],   // views created differently
