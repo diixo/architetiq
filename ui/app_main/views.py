@@ -24,19 +24,31 @@ _DEFAULT_MODEL = {
 
 _MODEL_FILE = os.path.join(os.path.dirname(__file__), "data", "model.json")
 
+_GRAFICO_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "data", "aspice-archi-prj", "model")
+)
+
 _XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
 
 _VIEW_TYPES = {"ArchimateDiagramModel", "SketchModel", "CanvasModel"}
+
+_SKIP_TYPES = {"Relationship", "Relation"}
 
 
 def _load_model():
     if os.path.exists(_MODEL_FILE):
         with open(_MODEL_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
+    # First run: try Grafico folder, fall back to default
+    grafico_root = os.path.join(_GRAFICO_DIR, "folder.xml")
+    if os.path.isfile(grafico_root):
+        model = _parse_grafico(_GRAFICO_DIR)
+    else:
+        model = _DEFAULT_MODEL
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
     with open(_MODEL_FILE, "w", encoding="utf-8") as f:
-        json.dump(_DEFAULT_MODEL, f, ensure_ascii=False, indent=2)
-    return _DEFAULT_MODEL
+        json.dump(model, f, ensure_ascii=False, indent=2)
+    return model
 
 
 def _local(tag):
@@ -162,6 +174,68 @@ def _parse_exchange(root, ns):
     }
 
 
+# ── Grafico multi-file format (folder of XML files) ──────────────────────────
+
+def _parse_grafico(model_dir):
+    root_elem = ET.parse(os.path.join(model_dir, "folder.xml")).getroot()
+    model_name = root_elem.get("name", "*New Model")
+    model_id = root_elem.get("id", "")
+    purpose = root_elem.get("purpose", "")
+
+    def parse_dir(dirpath):
+        folder_xml = os.path.join(dirpath, "folder.xml")
+        folder_elem = ET.parse(folder_xml).getroot()
+        folder_name = folder_elem.get("name", os.path.basename(dirpath))
+        folder_id = folder_elem.get("id", "")
+
+        children = []
+        for entry in sorted(os.scandir(dirpath), key=lambda e: e.name):
+            if entry.name == "folder.xml":
+                continue
+            if entry.is_dir():
+                sub = parse_dir(entry.path)
+                if sub:
+                    children.append(sub)
+            elif entry.name.endswith(".xml"):
+                try:
+                    elem = ET.parse(entry.path).getroot()
+                except ET.ParseError:
+                    continue
+                tag = _local(elem.tag)
+                if any(skip in tag for skip in _SKIP_TYPES):
+                    continue
+                is_view = tag in _VIEW_TYPES
+                children.append({
+                    "name": elem.get("name", ""),
+                    "type": "view" if is_view else "element",
+                    "element_type": tag,
+                    "id": elem.get("id", ""),
+                    "documentation": elem.get("documentation", ""),
+                    "children": [],
+                })
+
+        return {
+            "name": folder_name,
+            "type": "node",
+            "id": folder_id,
+            "children": children,
+        }
+
+    children = [
+        parse_dir(e.path)
+        for e in sorted(os.scandir(model_dir), key=lambda e: e.name)
+        if e.is_dir()
+    ]
+
+    return {
+        "name": model_name,
+        "type": "model",
+        "id": model_id,
+        "purpose": purpose,
+        "children": children,
+    }
+
+
 # ── Dispatcher ────────────────────────────────────────────────────────────────
 
 def _parse_archimate(content):
@@ -183,6 +257,10 @@ def main(request):
         "description": "ArchitetIQ description",
         "model": model,
     })
+
+
+def api_model(request):
+    return JsonResponse(_load_model())
 
 
 def upload_model(request):
