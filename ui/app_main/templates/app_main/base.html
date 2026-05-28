@@ -46,7 +46,7 @@
 
     <!-- Header -->
     <header class="app-header">
-      <div class="py-3" style="padding-left: 1.75rem; padding-right: 1.75rem;">
+      <div style="padding-left: 1.75rem; padding-right: 1.75rem; padding-top: 0.75rem; padding-bottom: 0.75rem;">
 
         <div class="d-flex align-items-center gap-3">
           <div class="fw-bold my-0" style="font-size: 1.25rem;">
@@ -136,7 +136,23 @@
               Overview
             </a>
           </li>
+          <li class="nav-item dropdown">
+            <button
+              class="nav-link dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              aria-label="Overview actions"
+            >
+              <i class="bi bi-three-dots"></i>
+            </button>
 
+            <ul class="dropdown-menu dropdown-menu-fixed-scroll shadow-sm" style="font-size: 0.875rem;">
+              <li><a class="dropdown-item" href="#">New</a></li>
+              <li><a class="dropdown-item" href="#">Open</a></li>
+              <li><a class="dropdown-item" href="#">Save</a></li>
+            </ul>
+          </li>
           <li class="nav-item">
             <a class="nav-link" href="#">
               <i class="bi bi-list-check"></i>
@@ -249,6 +265,62 @@
         });
       });
     </script>
+
+
+    <!-- Dropdown positioning helper for menus inside horizontal overflow containers -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var dropdownItems = document.querySelectorAll('.horizontal-menu .nav-item.dropdown');
+
+        function positionDropdown(dropdownItem) {
+          var button = dropdownItem.querySelector('[data-bs-toggle="dropdown"]');
+          var menu = dropdownItem.querySelector('.dropdown-menu-fixed-scroll');
+          if (!button || !menu || !menu.classList.contains('show')) return;
+
+          var rect = button.getBoundingClientRect();
+          var menuWidth = menu.offsetWidth || 160;
+          var viewportWidth = document.documentElement.clientWidth;
+          var left = rect.left;
+
+          var MENU_GAP = 6;          // расстояние между кнопкой и dropdown
+          var VIEWPORT_PADDING = 8;  // минимальный отступ от края экрана
+
+          if (left + menuWidth > viewportWidth - VIEWPORT_PADDING) {
+            left = viewportWidth - menuWidth - VIEWPORT_PADDING;
+          }
+          if (left < VIEWPORT_PADDING) {
+            left = VIEWPORT_PADDING;
+          }
+
+          menu.style.top = (rect.bottom + MENU_GAP) + 'px';
+          menu.style.left = left + 'px';
+        }
+
+        dropdownItems.forEach(function(dropdownItem) {
+          dropdownItem.addEventListener('shown.bs.dropdown', function() {
+            positionDropdown(dropdownItem);
+          });
+
+          dropdownItem.addEventListener('hidden.bs.dropdown', function() {
+            var menu = dropdownItem.querySelector('.dropdown-menu-fixed-scroll');
+            if (!menu) return;
+            menu.style.top = '';
+            menu.style.left = '';
+          });
+        });
+
+        window.addEventListener('resize', function() {
+          dropdownItems.forEach(positionDropdown);
+        });
+
+        document.querySelectorAll('.horizontal-menu').forEach(function(menuScroller) {
+          menuScroller.addEventListener('scroll', function() {
+            dropdownItems.forEach(positionDropdown);
+          });
+        });
+      });
+    </script>
+
 
     {% load static %}
     <script src="{% static 'app_main/assets/js/bootstrap.bundle.min.js' %}"></script>

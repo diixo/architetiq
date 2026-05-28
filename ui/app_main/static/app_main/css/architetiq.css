@@ -49,7 +49,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: #495057;
+    color: #333;
     font-weight: 500;
     padding: 6px 14px;
     border-radius: 10px;
@@ -70,6 +70,29 @@ body {
     font-weight: 500;
     border-radius: 999px;
 }
+
+
+/* Keep the dropdown button inside the horizontal scroll menu,
+    but render its menu as fixed so it is not clipped by overflow-x:auto.*/
+.horizontal-menu-wrapper {
+    z-index: 2000;
+}
+
+.horizontal-menu .nav-item.dropdown {
+    position: static;
+}
+
+.horizontal-menu .dropdown-menu.dropdown-menu-fixed-scroll {
+    position: fixed !important;
+    z-index: 3000;
+    margin-top: 0;
+}
+
+.horizontal-menu .nav-link.dropdown-toggle::after {
+    display: none;
+}
+/* end drop-down */
+
 
 .app-layout {
     height: calc(100vh - 90px);
