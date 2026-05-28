@@ -44,27 +44,33 @@ const title = computed(() =>
   diagramData.value?.name || store.model?.name || 'Canvas'
 )
 
+// ── ArchiMate marker definitions (from Archi Java source) ────────────────────
+// Paths: tip at (0,0), body extends to positive x
+const MK_FILL_TRI  = { name: 'block', width: 10, height: 8 }
+const MK_OPEN_TRI  = { d: 'M 10 -5 0 0 10 5 Z', fill: '#fff', stroke: 'inherit', strokeWidth: 1.5 }
+const MK_OPEN_V    = { d: 'M 8 -5 0 0 8 5',     fill: 'none', stroke: 'inherit', strokeWidth: 1.5 }
+const MK_FILL_DIA  = { d: 'M 0 0 7 -4 14 0 7 4 Z', fill: 'inherit', stroke: 'inherit' }
+const MK_OPEN_DIA  = { d: 'M 0 0 7 -4 14 0 7 4 Z', fill: '#fff',    stroke: 'inherit', strokeWidth: 1.5 }
+const MK_CIRCLE    = { name: 'circle', r: 4, fill: 'inherit', stroke: 'inherit' }
+const MK_NONE      = { fill: 'none', stroke: 'none', d: 'M 0 0' }
+
 // ── ArchiMate relationship → line style ──────────────────────────────────────
 const REL_STYLE = {
-  // Structural
-  CompositionRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '' },
-  AggregationRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '' },
-  AssignmentRelationship:     { stroke: '#444', strokeWidth: 2,   dash: '' },
-  RealizationRelationship:    { stroke: '#444', strokeWidth: 1,   dash: '8 4' },
-  // Dependency
-  AssociationRelationship:    { stroke: '#666', strokeWidth: 1,   dash: '' },
-  AccessRelationship:         { stroke: '#666', strokeWidth: 1,   dash: '4 3' },
-  InfluenceRelationship:      { stroke: '#666', strokeWidth: 1,   dash: '8 4' },
-  // Dynamic
-  TriggeringRelationship:     { stroke: '#444', strokeWidth: 1.5, dash: '' },
-  FlowRelationship:           { stroke: '#444', strokeWidth: 1,   dash: '8 4' },
-  // Other
-  ServingRelationship:        { stroke: '#666', strokeWidth: 1,   dash: '' },
-  SpecializationRelationship: { stroke: '#444', strokeWidth: 1,   dash: '' },
+  CompositionRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_FILL_DIA, tgt: MK_NONE    },
+  AggregationRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_OPEN_DIA, tgt: MK_NONE    },
+  AssignmentRelationship:     { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_CIRCLE,   tgt: MK_FILL_TRI },
+  RealizationRelationship:    { stroke: '#444', strokeWidth: 1,   dash: '8 4', src: MK_NONE,     tgt: MK_OPEN_TRI },
+  SpecializationRelationship: { stroke: '#444', strokeWidth: 1,   dash: '',    src: MK_NONE,     tgt: MK_OPEN_TRI },
+  AssociationRelationship:    { stroke: '#666', strokeWidth: 1,   dash: '',    src: MK_NONE,     tgt: MK_OPEN_V  },
+  ServingRelationship:        { stroke: '#666', strokeWidth: 1,   dash: '',    src: MK_NONE,     tgt: MK_OPEN_V  },
+  AccessRelationship:         { stroke: '#666', strokeWidth: 1,   dash: '4 3', src: MK_NONE,     tgt: MK_OPEN_V  },
+  InfluenceRelationship:      { stroke: '#666', strokeWidth: 1,   dash: '8 4', src: MK_NONE,     tgt: MK_OPEN_V  },
+  TriggeringRelationship:     { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_NONE,     tgt: MK_FILL_TRI },
+  FlowRelationship:           { stroke: '#444', strokeWidth: 1,   dash: '8 4', src: MK_NONE,     tgt: MK_FILL_TRI },
 }
 
 function edgeStyle(relType) {
-  return REL_STYLE[relType] || { stroke: '#777', strokeWidth: 1, dash: '' }
+  return REL_STYLE[relType] || { stroke: '#777', strokeWidth: 1, dash: '', src: MK_NONE, tgt: MK_FILL_TRI }
 }
 
 // ── OrthogonalAnchor — точки входу/виходу стрілок (як в Archi OrthogonalAnchor.java) ──
@@ -316,7 +322,8 @@ function renderDiagram() {
             stroke: s.stroke,
             strokeWidth: s.strokeWidth,
             ...(s.dash ? { strokeDasharray: s.dash } : {}),
-            targetMarker: { name: 'block', width: 8, height: 5 },
+            sourceMarker: s.src,
+            targetMarker: s.tgt,
           },
         },
       })
