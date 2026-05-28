@@ -84,11 +84,27 @@ export const useModelStore = defineStore('model', () => {
     return m ? m[1] : ''
   }
 
+  const TOP_FOLDER_TYPES = {
+    'Strategy': 'strategy', 'Business': 'business', 'Application': 'application',
+    'Technology And Physical': 'technology', 'Motivation': 'motivation',
+    'Implementation and Migration': 'implementation_migration',
+    'Other': 'other', 'Relations': 'relations', 'Views': 'diagrams',
+  }
+
+  function migrateFolderTypes(m) {
+    for (const child of (m.children || [])) {
+      if (child.type === 'node' && !child.folder_type && TOP_FOLDER_TYPES[child.name]) {
+        child.folder_type = TOP_FOLDER_TYPES[child.name]
+      }
+    }
+    return m
+  }
+
   async function fetchModel() {
     loading.value = true
     try {
       const r = await fetch('/api/model/')
-      model.value = await r.json()
+      model.value = migrateFolderTypes(await r.json())
     } catch (e) {
       error.value = e.message
     } finally {

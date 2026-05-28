@@ -43,10 +43,34 @@ _VIEW_TYPES = {"ArchimateDiagramModel", "SketchModel", "CanvasModel"}
 _SKIP_TYPES = {"Relationship", "Relation"}
 
 
+_FOLDER_TYPE_BY_NAME = {
+    "Strategy":                     "strategy",
+    "Business":                     "business",
+    "Application":                  "application",
+    "Technology And Physical":      "technology",
+    "Motivation":                   "motivation",
+    "Implementation and Migration": "implementation_migration",
+    "Other":                        "other",
+    "Relations":                    "relations",
+    "Views":                        "diagrams",
+}
+
+
+def _migrate_folder_types(model):
+    """Add folder_type to top-level folders that are missing it (migration for old models)."""
+    for child in model.get("children", []):
+        if child.get("type") == "node" and not child.get("folder_type"):
+            ft = _FOLDER_TYPE_BY_NAME.get(child.get("name", ""))
+            if ft:
+                child["folder_type"] = ft
+    return model
+
+
 def _load_model():
     if os.path.exists(_MODEL_FILE):
         with open(_MODEL_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            model = json.load(f)
+        return _migrate_folder_types(model)
     # First run: start with empty default model
     return _DEFAULT_MODEL
 
