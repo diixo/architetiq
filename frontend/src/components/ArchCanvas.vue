@@ -44,6 +44,29 @@ const title = computed(() =>
   diagramData.value?.name || store.model?.name || 'Canvas'
 )
 
+// ── ArchiMate relationship → line style ──────────────────────────────────────
+const REL_STYLE = {
+  // Structural
+  CompositionRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '' },
+  AggregationRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '' },
+  AssignmentRelationship:     { stroke: '#444', strokeWidth: 2,   dash: '' },
+  RealizationRelationship:    { stroke: '#444', strokeWidth: 1,   dash: '8 4' },
+  // Dependency
+  AssociationRelationship:    { stroke: '#666', strokeWidth: 1,   dash: '' },
+  AccessRelationship:         { stroke: '#666', strokeWidth: 1,   dash: '4 3' },
+  InfluenceRelationship:      { stroke: '#666', strokeWidth: 1,   dash: '8 4' },
+  // Dynamic
+  TriggeringRelationship:     { stroke: '#444', strokeWidth: 1.5, dash: '' },
+  FlowRelationship:           { stroke: '#444', strokeWidth: 1,   dash: '8 4' },
+  // Other
+  ServingRelationship:        { stroke: '#666', strokeWidth: 1,   dash: '' },
+  SpecializationRelationship: { stroke: '#444', strokeWidth: 1,   dash: '' },
+}
+
+function edgeStyle(relType) {
+  return REL_STYLE[relType] || { stroke: '#777', strokeWidth: 1, dash: '' }
+}
+
 // ── ArchiMate layer colours (Archi defaults) ─────────────────────────────────
 const LAYER_COLOR = {
   // Business
@@ -223,16 +246,23 @@ function renderDiagram() {
   for (const e of edges) {
     if (!e.source || !e.target) continue
     if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue
+    const s = edgeStyle(e.type)
     try {
       graph.addEdge({
         id: e.id || undefined,
         source: e.source,
         target: e.target,
+        vertices: e.vertices || [],
+        connector: { name: 'straight' },
+        router:    { name: 'normal' },
         attrs: {
-          line: { stroke:'#666', strokeWidth:1,
-                  targetMarker:{ name:'block', width:8, height:6 } },
+          line: {
+            stroke: s.stroke,
+            strokeWidth: s.strokeWidth,
+            strokeDasharray: s.dash || null,
+            targetMarker: { name: 'block', width: 8, height: 5 },
+          },
         },
-        connector: { name:'rounded' },
       })
     } catch (_) { /* skip invalid */ }
   }

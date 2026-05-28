@@ -389,6 +389,7 @@ def _find_diagram_file(view_id):
 def _parse_diagram_file(xml_path, elements_index):
     root = ET.parse(xml_path).getroot()
     nodes, edges = [], []
+    node_bounds = {}  # visual_id → (ax, ay, w, h) for bendpoint calculation
 
     def get_bounds(elem):
         for child in elem:
@@ -415,11 +416,22 @@ def _parse_diagram_file(xml_path, elements_index):
             stag = _local(sub.tag)
             if stag in ('sourceConnection', 'sourceConnections'):
                 ct = sub.get(_XSI_TYPE, '').split(':')[-1]
+                # Collect raw relative bendpoints
+                raw_bps = []
+                for bp in sub:
+                    if _local(bp.tag) == 'bendpoint':
+                        raw_bps.append({
+                            'startX': int(bp.get('startX', 0)),
+                            'startY': int(bp.get('startY', 0)),
+                            'endX':   int(bp.get('endX', 0)),
+                            'endY':   int(bp.get('endY', 0)),
+                        })
                 edges.append({
-                    'id': sub.get('id', ''),
-                    'type': ct,
+                    'id':     sub.get('id', ''),
+                    'type':   ct,
                     'source': sub.get('source', ''),
                     'target': sub.get('target', ''),
+                    '_raw_bps': raw_bps,
                 })
 
         if obj_type == 'DiagramModelGroup':
@@ -439,6 +451,7 @@ def _parse_diagram_file(xml_path, elements_index):
                 if _local(sub.tag) == 'archimateElement':
                     eid, ename, etype = resolve_href(sub.get('href', ''))
                     break
+            node_bounds[oid] = (ax, ay, bw, bh)
             nodes.append({
                 'id': oid, 'type': 'element',
                 'name': ename, 'element_id': eid, 'element_type': etype,
@@ -446,6 +459,7 @@ def _parse_diagram_file(xml_path, elements_index):
             })
 
         elif obj_type == 'DiagramModelNote':
+            node_bounds[oid] = (ax, ay, bw, bh)
             nodes.append({
                 'id': oid, 'type': 'note',
                 'name': elem.get('content', ''),
@@ -457,15 +471,38 @@ def _parse_diagram_file(xml_path, elements_index):
             for sub in elem:
                 if _local(sub.tag) == 'referencedModel':
                     ref_id = sub.get('href', '').split('#')[-1]
+            node_bounds[oid] = (ax, ay, bw, bh)
             nodes.append({
                 'id': oid, 'type': 'view_ref',
                 'name': '', 'ref_id': ref_id,
                 'x': ax, 'y': ay, 'width': bw, 'height': bh,
             })
 
+        elif obj_type == 'DiagramModelGroup':
+            node_bounds[oid] = (ax, ay, bw, bh)
+
     for child in root:
         if _local(child.tag) == 'children':
             parse_child(child)
+
+    # Calculate absolute bendpoint vertices (Archi relative → absolute)
+    for edge in edges:
+        raw_bps = edge.pop('_raw_bps', [])
+        if not raw_bps:
+            edge['vertices'] = []
+            continue
+        sx, sy, sw, sh = node_bounds.get(edge['source'], (0, 0, 120, 55))
+        tx, ty, tw, th = node_bounds.get(edge['target'], (0, 0, 120, 55))
+        src_cx, src_cy = sx + sw / 2, sy + sh / 2
+        tgt_cx, tgt_cy = tx + tw / 2, ty + th / 2
+        n = len(raw_bps)
+        vertices = []
+        for i, bp in enumerate(raw_bps):
+            w = (i + 1) / (n + 1)
+            abs_x = round((1 - w) * (src_cx + bp['startX']) + w * (tgt_cx + bp['endX']))
+            abs_y = round((1 - w) * (src_cy + bp['startY']) + w * (tgt_cy + bp['endY']))
+            vertices.append({'x': abs_x, 'y': abs_y})
+        edge['vertices'] = vertices
 
     return {
         'id': root.get('id', ''),
