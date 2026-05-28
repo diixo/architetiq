@@ -151,11 +151,12 @@ function triggerOpen() {
   fileInputRef.value?.click()
 }
 
-function onNew() {
+async function onNew() {
   if (!confirm('Reset to a new empty model? Unsaved changes will be lost.')) return
   store.resetModel()
   canvasRef.value?.clearDiagram()
-  showToast('New model created — not saved yet')
+  await store.saveModel()
+  showToast('New model created')
 }
 
 async function onLoadAspice() {
