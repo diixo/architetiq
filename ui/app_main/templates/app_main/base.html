@@ -36,157 +36,222 @@
         <!-- Fontawesome Icons -->
         <link rel="stylesheet" href="{% static 'app_main/assets/icons/webfonts/fontawesome.css' %}">
 
-        <link rel="stylesheet" href="{% static 'app_main/css/dashboard.css' %}">
+        <link rel="stylesheet" href="{% static 'app_main/css/architetiq.css' %}">
 
     {% block extra_style %}
     {% endblock %}
   </head>
 
-  <body class="d-flex flex-column min-vh-100">
+  <body>
 
-    <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
-      <symbol id="list" viewBox="0 0 16 16">
-        <path
-          fill-rule="evenodd"
-          d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"
-        ></path>
-      </symbol>
-      <symbol id="search" viewBox="0 0 16 16">
-        <path
-          d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"
-        ></path>
-      </symbol>
-    </svg>
-    <header class="navbar sticky-top bg-white flex-md-nowrap p-0 shadow-sm" data-bs-theme="light">
-      <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 d-flex justify-content-center align-items-center"
-        href="{% url 'app_main:main' %}"
-      >
-        <img src="/static/app_main/logos/logo-dxc-new.svg" 
-            class="img-fluid" alt="brand-logo" style="height:24px;" title="AIdelix">
-      </a>
-      <ul class="navbar-nav flex-row d-md-none">
-        <li class="nav-item text-nowrap">
-          <button
-            class="nav-link px-3 text-white"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSearch"
-            aria-controls="navbarSearch"
-            aria-expanded="false"
-            aria-label="Toggle search"
-          >
-            <svg class="bi" aria-hidden="true">
-              <use xlink:href="#search"></use>
-            </svg>
-          </button>
-        </li>
-        <li class="nav-item text-nowrap">
-          <button
-            class="nav-link px-3 text-white"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#sidebarMenu"
-            aria-controls="sidebarMenu"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <svg class="bi" aria-hidden="true">
-              <use xlink:href="#list"></use>
-            </svg>
-          </button>
-        </li>
-      </ul>
-      <div id="navbarSearch" class="navbar-search w-100 collapse">
-        <input
-          class="form-control w-100 rounded-0 border-0"
-          type="text"
-          placeholder="Search"
-          aria-label="Search"
-        />
-      </div>
-    </header>
-    <div class="container-fluid app-full-height flex-grow-1 h-100">
-      <div class="row h-100">
-        <div
-          class="sidebar border border-right col-md-3 col-lg-2 p-0 bg-body-tertiary h-100"
-        >
-          <div
-            class="offcanvas-md offcanvas-end bg-body-tertiary h-100"
-            tabindex="-1"
-            id="sidebarMenu"
-            aria-labelledby="sidebarMenuLabel"
-          >
-            <div class="offcanvas-header">
-              <h5 class="offcanvas-title" id="sidebarMenuLabel">AIdelix</h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="offcanvas"
-                data-bs-target="#sidebarMenu"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div
-              class="offcanvas-body d-md-flex flex-column p-0 pt-lg-4 overflow-y-auto"
-            >
-              <ul class="nav flex-column">
-                <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2 active"
-                    href="{% url 'app_main:requirements' %}">
-                    <span class="material-icons">grading</span>
-                    Requirements
-                  </a>
-                </li>
+    <!-- Header -->
+    <header class="app-header">
+      <div class="py-3" style="padding-left: 1.75rem; padding-right: 1.75rem;">
 
-              </ul>
+        <div class="d-flex align-items-center gap-3">
+          <div class="fw-bold my-0" style="font-size: 1.25rem;">
+            <span style="color: #343a40;">architet</span><span style="color: #712cf9;">IQ</span>
+          </div>
 
-              <h6
-                class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase"
-              >
-                <span>Saved reports</span>
-                <a
-                  class="link-secondary"
-                  href="#"
-                  aria-label="Add a new report"
-                >
-                  <span class="material-icons">add_circle_outline</span>
-                </a>
-              </h6>
-              <ul class="nav flex-column mb-auto">
-                <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
-                    <span class="material-icons">article</span>
-                    Last used
-                  </a>
-                </li>
-              </ul>
-              <hr class="my-3" />
-              <ul class="nav flex-column mb-auto">
-                <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
-                    <span class="material-icons">miscellaneous_services</span>
-                    Settings
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
-                    <span class="material-icons">logout</span>
-                    Sign out
-                  </a>
-                </li>
-              </ul>
+          <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <!--<h6 class="mb-0">v0.0</h6>-->
+              <span class="badge text-bg-light border">v0.0</span>
             </div>
           </div>
+
+          <button
+            class="btn btn-light border d-md-none"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mobileMenu"
+            aria-controls="mobileMenu"
+            aria-expanded="false"
+            aria-label="Toggle menu"
+          >
+            <i class="bi bi-list" style="font-size: 1.25rem; -webkit-text-stroke: 0.5px;"></i>
+          </button>
         </div>
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 h-100 d-flex flex-column">
-        {% block content %}
-        {% endblock %}
-        </main>
       </div>
+    </header>
+
+    <!-- Mobile dropdown menu -->
+    <div class="collapse d-md-none border-bottom" id="mobileMenu">
+      <nav class="px-3 py-2 bg-white">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">
+              <i class="bi bi-house-door me-2"></i>Overview
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-list-check me-2"></i>Requirements
+              <span class="badge text-bg-secondary ms-1">24</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-diagram-3 me-2"></i>Architecture
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-kanban me-2"></i>Scenarios
+              <span class="badge text-bg-secondary ms-1">8</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-bug me-2"></i>Issues
+              <span class="badge text-bg-secondary ms-1">3</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-shield-check me-2"></i>Compliance
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-bar-chart me-2"></i>Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-gear me-2"></i>Settings
+            </a>
+          </li>
+        </ul>
+      </nav>
     </div>
 
+    <!-- Horizontal menu (desktop) -->
+    <nav class="horizontal-menu-wrapper d-none d-md-block">
+      <div class="container-fluid px-0">
+        <ul class="nav horizontal-menu flex-nowrap px-3 px-md-3">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">
+              <i class="bi bi-house-door"></i>
+              Overview
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-list-check"></i>
+              Requirements
+              <span class="badge text-bg-secondary">24</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-diagram-3"></i>
+              Architecture
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-kanban"></i>
+              Scenarios
+              <span class="badge text-bg-secondary">8</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-bug"></i>
+              Issues
+              <span class="badge text-bg-secondary">3</span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-shield-check"></i>
+              Compliance
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-bar-chart"></i>
+              Reports
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="bi bi-gear"></i>
+              Settings
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="app-layout d-flex bg-dark-subtle">
+    {% block content %}
+    {% endblock %}
+    </main>
+
+    <!-- Tree toggle script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        function strcmp(a, b) {
+          var aText = a.textContent.trim().toLowerCase();
+          var bText = b.textContent.trim().toLowerCase();
+          if (aText < bText) return -1;
+          if (aText > bText) return 1;
+          return 0;
+        }
+
+        function sortChildren(ul) {
+          var folders = Array.from(ul.querySelectorAll(':scope > li.tree-folder'));
+          var elements = Array.from(ul.querySelectorAll(':scope > li.tree-element'));
+          folders.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+          elements.sort(strcmp).forEach(function(li) { ul.appendChild(li); });
+        }
+
+        // Setup: add parent_li to any li with child ul, hide direct children
+        document.querySelectorAll('.tree li').forEach(function(li) {
+          if (li.querySelector(':scope > ul')) {
+            li.classList.add('parent_li');
+            li.querySelectorAll(':scope > ul > li').forEach(function(child) {
+              child.style.display = 'none';
+            });
+          }
+        });
+
+        // Click handler
+        document.querySelectorAll('.tree li.parent_li > span, .tree li.tree-folder > span').forEach(function(toggler) {
+          toggler.addEventListener('click', function(e) {
+            var li = this.closest('li');
+            var childUl = li.querySelector(':scope > ul');
+            if (!childUl) return;
+
+            var children = childUl.children;
+            var isOpen = li.classList.contains('open');
+
+            if (isOpen) {
+              for (var i = 0; i < children.length; i++) children[i].style.display = 'none';
+              li.classList.remove('open');
+            } else {
+              sortChildren(childUl);
+              for (var i = 0; i < children.length; i++) children[i].style.display = '';
+              li.classList.add('open');
+            }
+            e.stopPropagation();
+          });
+        });
+      });
+    </script>
+
     {% load static %}
-    <script src="{% static 'app_main/assets/js/bootstrap.bundle.min.js' %}" class="astro-vvvwv3sm"></script>
+    <script src="{% static 'app_main/assets/js/bootstrap.bundle.min.js' %}"></script>
 
   </body>
 </html>
