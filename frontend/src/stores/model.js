@@ -90,7 +90,12 @@ export const useModelStore = defineStore('model', () => {
       { name: 'Implementation and Migration', type: 'node', children: [] },
       { name: 'Other',                        type: 'node', children: [] },
       { name: 'Relations',                    type: 'node', children: [] },
-      { name: 'Views',                        type: 'node', children: [] },
+      { name: 'Views', type: 'node', folder_type: 'diagrams', children: [
+        { name: 'Default View', type: 'view',
+          element_type: 'ArchimateDiagramModel',
+          id: '00000000-0000-0000-0000-000000000001',
+          documentation: '', children: [] },
+      ]},
     ],
   }
 

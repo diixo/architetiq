@@ -20,7 +20,12 @@ _DEFAULT_MODEL = {
         {"name": "Implementation and Migration", "type": "node", "folder_type": "implementation_migration","children": []},
         {"name": "Other",                        "type": "node", "folder_type": "other",                   "children": []},
         {"name": "Relations",                    "type": "node", "folder_type": "relations",               "children": []},
-        {"name": "Views",                        "type": "node", "folder_type": "diagrams",                "children": []},
+        {"name": "Views", "type": "node", "folder_type": "diagrams", "children": [
+            {"name": "Default View", "type": "view",
+             "element_type": "ArchimateDiagramModel",
+             "id": "00000000-0000-0000-0000-000000000001",
+             "documentation": "", "children": []},
+        ]},
     ]
 }
 

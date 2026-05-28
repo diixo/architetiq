@@ -1,0 +1,69 @@
+{
+  "name": "*New Model",
+  "type": "model",
+  "children": [
+    {
+      "name": "Strategy",
+      "type": "node",
+      "folder_type": "strategy",
+      "children": []
+    },
+    {
+      "name": "Business",
+      "type": "node",
+      "folder_type": "business",
+      "children": []
+    },
+    {
+      "name": "Application",
+      "type": "node",
+      "folder_type": "application",
+      "children": []
+    },
+    {
+      "name": "Technology And Physical",
+      "type": "node",
+      "folder_type": "technology",
+      "children": []
+    },
+    {
+      "name": "Motivation",
+      "type": "node",
+      "folder_type": "motivation",
+      "children": []
+    },
+    {
+      "name": "Implementation and Migration",
+      "type": "node",
+      "folder_type": "implementation_migration",
+      "children": []
+    },
+    {
+      "name": "Other",
+      "type": "node",
+      "folder_type": "other",
+      "children": []
+    },
+    {
+      "name": "Relations",
+      "type": "node",
+      "folder_type": "relations",
+      "children": []
+    },
+    {
+      "name": "Views",
+      "type": "node",
+      "folder_type": "diagrams",
+      "children": [
+        {
+          "name": "Default View",
+          "type": "view",
+          "element_type": "ArchimateDiagramModel",
+          "id": "00000000-0000-0000-0000-000000000001",
+          "documentation": "",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
