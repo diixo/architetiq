@@ -3,7 +3,7 @@
     <span
       class="tree-label"
       @click="handleClick"
-      @dblclick.stop="startEdit"
+      @dblclick.stop="!isProtected && startEdit()"
       @contextmenu.prevent="openCtx"
       @mouseenter="hovered = true"
       @mouseleave="hovered = false"
@@ -44,12 +44,13 @@
           @click.stop="onAdd"
         ><i class="bi bi-plus"></i></button>
         <button
+          v-if="!isProtected"
           class="tree-action-btn"
           title="Rename"
           @click.stop="startEdit"
         ><i class="bi bi-pencil"></i></button>
         <button
-          v-if="!isRoot"
+          v-if="!isRoot && !isProtected"
           class="tree-action-btn tree-action-delete"
           title="Delete"
           @click.stop="onDelete"
@@ -70,6 +71,7 @@
       ref="ctxRef"
       :node="node"
       :is-root="isRoot"
+      :is-protected="isProtected"
       @start-edit="startEdit"
     />
   </li>
@@ -88,6 +90,9 @@ const props = defineProps({
 const store        = useModelStore()
 const hovered      = ref(false)
 const isEditing    = ref(false)
+
+// Top-level folders (direct children of model root) are protected — cannot rename or delete
+const isProtected  = computed(() => store.isTopLevelNode(props.node.id))
 const editValue    = ref('')
 const editInputRef = ref(null)
 const isOpen       = ref(false)

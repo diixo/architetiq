@@ -43,6 +43,24 @@ export const useModelStore = defineStore('model', () => {
     editingNodeId.value = id
   }
 
+  function addView(parentId, viewType = 'ArchimateDiagramModel') {
+    const parent = findById(parentId)
+    if (!parent) return
+    const id = genId()
+    const label = viewType === 'SketchModel' ? 'New Sketch' : 'New View'
+    parent.children = parent.children || []
+    parent.children.push({
+      id,
+      name: label,
+      type: 'view',
+      element_type: viewType,
+      documentation: '',
+      children: [],
+    })
+    editingNodeId.value = id
+    saveModel()
+  }
+
   function addElement(parentId, elementType) {
     const parent = findById(parentId)
     if (!parent) return
@@ -146,6 +164,31 @@ export const useModelStore = defineStore('model', () => {
     return walk(model.value)
   }
 
+  function isTopLevelNode(id) {
+    return model.value?.children?.some(c => c.id === id) ?? false
+  }
+
+  // Walk up the tree to find the topmost folder_type ancestor
+  // (matches Archi's topMostFolder.getType() logic)
+  function getTopFolderType(nodeId) {
+    if (!model.value) return null
+    function findPath(node, target, path) {
+      if (node.id === target) return path
+      for (const c of (node.children || [])) {
+        const r = findPath(c, target, [...path, node])
+        if (r) return r
+      }
+      return null
+    }
+    const ancestors = findPath(model.value, nodeId, [])
+    if (!ancestors) return null
+    // Return folder_type of the first ancestor that has one (topmost = first in path after root)
+    for (const anc of ancestors) {
+      if (anc.folder_type && anc.type === 'node') return anc.folder_type
+    }
+    return null
+  }
+
   function findFolderByType(folderType) {
     if (!model.value || !folderType) return null
     function walk(node) {
@@ -176,7 +219,7 @@ export const useModelStore = defineStore('model', () => {
 
   return {
     model, selected, loading, error, filterQuery, editingNodeId,
-    fetchModel, selectNode, findById, getNodePath, findFolderByType,
-    loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement,
+    fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
+    loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement, addView,
   }
 })

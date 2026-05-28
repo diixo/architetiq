@@ -1,5 +1,6 @@
 // Maps folder_type → list of ArchiMate element types that can be created there
 // Source: Archi TreeModelViewActionFactory.java
+// Source: Archi TreeModelViewActionFactory.java
 export const FOLDER_ELEMENTS = {
   strategy: [
     'Resource', 'Capability', 'ValueStream', 'CourseOfAction',
@@ -14,6 +15,7 @@ export const FOLDER_ELEMENTS = {
     'ApplicationFunction', 'ApplicationInteraction', 'ApplicationProcess',
     'ApplicationEvent', 'ApplicationService', 'DataObject',
   ],
+  // Physical is merged into Technology (per Archi source)
   technology: [
     'Node', 'Device', 'SystemSoftware', 'TechnologyCollaboration', 'TechnologyInterface',
     'Path', 'CommunicationNetwork', 'TechnologyFunction', 'TechnologyProcess',
@@ -30,8 +32,10 @@ export const FOLDER_ELEMENTS = {
   other: [
     'Location', 'Grouping', 'Junction',
   ],
+  // Relations are created by drawing on canvas, not via New menu
   relations: [],
-  diagrams: [],   // views created differently
+  // Diagrams: ArchimateDiagramModel and SketchModel
+  diagrams: ['ArchimateDiagramModel', 'SketchModel'],
 }
 
 // Human-readable name from CamelCase type
