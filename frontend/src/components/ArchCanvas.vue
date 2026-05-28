@@ -97,11 +97,13 @@ function initGraph() {
     const d = node.getData()
     if (!d) return
     if (d.element_id) {
-      // Resolve full element from model tree to get documentation etc.
       const full = store.findById(d.element_id)
       store.selectNode(full || d)
+    } else if (d.type === 'view' && d.id) {
+      // view_ref: resolve full view node so watch triggers loadDiagram
+      const full = store.findById(d.id)
+      store.selectNode(full || d)
     } else {
-      // group / note / view_ref — select with what we have
       store.selectNode(d)
     }
   })
@@ -165,14 +167,17 @@ function renderDiagram() {
         },
       })
     } else if (n.type === 'view_ref') {
+      const refView = n.ref_id ? store.findById(n.ref_id) : null
+      const refLabel = refView ? `→ ${refView.name}` : '→ View'
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 1,
-        label: '→ View',
-        data: { type: 'view', id: n.ref_id, name: '→ View' },
+        label: refLabel,
+        data: { type: 'view', id: n.ref_id, name: refView?.name || refLabel },
         attrs: {
           body:  { fill:'#e3f2fd', stroke:'#1565c0', strokeWidth:1, rx:4 },
-          label: { fontSize:10, fill:'#1565c0' },
+          label: { fontSize:10, fill:'#1565c0',
+                   textWrap: { width: n.width - 8, ellipsis: true } },
         },
       })
     }
