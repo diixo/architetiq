@@ -1,0 +1,180 @@
+
+:root {
+    --app-border: #dee2e6;
+    --app-muted-bg: #f8f9fa;
+    --app-menu-active-bg: #e7f1ff;
+    --app-menu-active-color: #0d6efd;
+}
+
+body {
+    background: #ffffff;
+}
+
+.app-header {
+    background: linear-gradient(180deg, #f0f0f0 0%, #e6e6e6 100%);
+    border-bottom: 1px solid var(--app-border);
+    border-top: 1px solid var(--app-border);
+}
+
+.horizontal-menu-wrapper {
+    background: #ffffff;
+    border-bottom: 1px solid var(--app-border);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.horizontal-menu {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 0.875rem;
+}
+
+.horizontal-menu::-webkit-scrollbar {
+    height: 6px;
+}
+
+.horizontal-menu::-webkit-scrollbar-thumb {
+    background: #ced4da;
+    border-radius: 999px;
+}
+
+.horizontal-menu .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 10px;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.horizontal-menu .nav-link:hover {
+    color: #0d6efd;
+    background: #f1f3f5;
+}
+
+.horizontal-menu .nav-link.active {
+    color: var(--app-menu-active-color);
+    background: var(--app-menu-active-bg);
+}
+
+.horizontal-menu .badge {
+    font-weight: 500;
+    border-radius: 999px;
+}
+
+
+/* Keep the dropdown button inside the horizontal scroll menu,
+    but render its menu as fixed so it is not clipped by overflow-x:auto.*/
+.horizontal-menu-wrapper {
+    z-index: 2000;
+}
+
+.horizontal-menu .nav-item.dropdown {
+    position: static;
+}
+
+.horizontal-menu .dropdown-menu.dropdown-menu-fixed-scroll {
+    position: fixed !important;
+    z-index: 3000;
+    margin-top: 0;
+}
+
+.horizontal-menu .nav-link.dropdown-toggle::after {
+    display: none;
+}
+/* end drop-down */
+
+
+.app-layout {
+    height: calc(100vh - 90px);
+}
+
+ul.tree, ul.tree ul {
+    list-style: none;
+    padding-left: 0.75rem !important;
+    margin: 0;
+}
+
+ul.tree { padding-left: 0; }
+
+.tree .parent_li > span,
+.tree .tree-folder > span {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+}
+
+.tree .parent_li > span:hover,
+.tree .tree-folder > span:hover {
+    color: #0d6efd;
+}
+
+.tree .parent_li > span > i:first-child,
+.tree .tree-folder > span > i:first-child {
+    transition: transform 0.15s;
+    font-size: 0.75rem;
+}
+
+.tree .parent_li.open > span > i:first-child,
+.tree .tree-folder.open > span > i:first-child {
+    transform: rotate(90deg);
+}
+
+.tree a {
+    text-decoration: none;
+    color: #495057;
+    font-size: 0.85rem;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.tree a:hover {
+    color: #0d6efd;
+    background: #f1f3f5;
+}
+
+/* Panel styles adapted from BS3 panel-default */
+.panel {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.panel-heading {
+    padding: 10px 15px;
+    background-color: #f5f5f5;
+    background-image: linear-gradient(to bottom, #f5f5f5 0, #e8e8e8 100%);
+    background-repeat: repeat-x;
+    border-bottom: 1px solid #ddd;
+    border-radius: 3px 3px 0 0;
+    font-size: 0.875rem;
+}
+.panel-body {
+    padding: 15px;
+}
+.root-panel {
+    height: 100%;
+    overflow: hidden;
+}
+.root-panel-body {
+    overflow: auto;
+}
+
+@media (max-width: 576px) {
+    .horizontal-menu .nav-link {
+    padding: 9px 12px;
+    font-size: 14px;
+    }
+}

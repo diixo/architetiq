@@ -4,7 +4,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="px-header py-header d-flex align-items-center gap-3">
-        <div class="fw-bold" style="font-size: 1.25rem;">
+        <div class="fw-bold my-0" style="font-size: 1.25rem;">
           <span style="color: #343a40;">architet</span><span style="color: #712cf9;">IQ</span>
         </div>
         <span class="badge text-bg-light border">v0.1</span>

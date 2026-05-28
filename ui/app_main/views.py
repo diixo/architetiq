@@ -1,9 +1,11 @@
 import os
 import json
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.conf import settings
 
 
 _DEFAULT_MODEL = {
@@ -248,6 +250,14 @@ def _parse_archimate(content):
 
 
 # ── Views ─────────────────────────────────────────────────────────────────────
+
+@ensure_csrf_cookie
+def spa(request):
+    index = Path(settings.FRONTEND_DIST) / 'index.html'
+    if index.exists():
+        return HttpResponse(index.read_text(encoding='utf-8'), content_type='text/html')
+    return HttpResponse('Frontend not built. Run: cd frontend && npm run build', status=503)
+
 
 @ensure_csrf_cookie
 def main(request):

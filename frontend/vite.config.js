@@ -4,6 +4,11 @@ import vue from '@vitejs/plugin-vue'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  base: '/static/vue/',
+  build: {
+    outDir: '../frontend/dist',
+    emptyOutDir: true,
+  },
   server: {
     port: 5173,
     proxy: {
