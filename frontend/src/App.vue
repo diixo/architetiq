@@ -1,5 +1,6 @@
 <template>
   <div class="app-shell">
+    <ArchimateDefs />
 
     <!-- Header -->
     <header class="app-header">
@@ -74,6 +75,7 @@ import { useModelStore } from './stores/model'
 import ModelTree from './components/ModelTree.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
 import ArchCanvas from './components/ArchCanvas.vue'
+import ArchimateDefs from './components/ArchimateDefs.vue'
 
 const store = useModelStore()
 const fileInputRef = ref(null)
