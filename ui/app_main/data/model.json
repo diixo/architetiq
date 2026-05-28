@@ -1,51 +1,60 @@
 {
-  "name": "*New Model",
+  "name": "Test Model",
   "type": "model",
+  "id": "abc-001",
   "children": [
-    {
-      "name": "Strategy",
-      "type": "node",
-      "children": []
-    },
     {
       "name": "Business",
       "type": "node",
-      "children": []
+      "id": "f1",
+      "children": [
+        {
+          "name": "Customer",
+          "type": "element",
+          "element_type": "BusinessActor",
+          "id": "e1",
+          "documentation": "Main customer",
+          "children": []
+        },
+        {
+          "name": "Manager",
+          "type": "element",
+          "element_type": "BusinessRole",
+          "id": "e2",
+          "documentation": "",
+          "children": []
+        }
+      ]
     },
     {
       "name": "Application",
       "type": "node",
-      "children": []
-    },
-    {
-      "name": "Technology And Physical",
-      "type": "node",
-      "children": []
-    },
-    {
-      "name": "Motivation",
-      "type": "node",
-      "children": []
-    },
-    {
-      "name": "Implementation and Migration",
-      "type": "node",
-      "children": []
-    },
-    {
-      "name": "Other",
-      "type": "node",
-      "children": []
-    },
-    {
-      "name": "Relations",
-      "type": "node",
-      "children": []
+      "id": "f2",
+      "children": [
+        {
+          "name": "CRM System",
+          "type": "element",
+          "element_type": "ApplicationComponent",
+          "id": "e3",
+          "documentation": "",
+          "children": []
+        }
+      ]
     },
     {
       "name": "Views",
       "type": "node",
-      "children": []
+      "id": "f3",
+      "children": [
+        {
+          "name": "Overview Diagram",
+          "type": "view",
+          "element_type": "ArchimateDiagramModel",
+          "id": "v1",
+          "documentation": "",
+          "children": []
+        }
+      ]
     }
   ]
 }
