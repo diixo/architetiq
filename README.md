@@ -28,3 +28,6 @@ py ui/manage.py makemigrations
 py ui/manage.py migrate
 ```
 
+* Strategy, Business, Application, Technology And Physical, Data, Motivation, Implementation and Migration, Requirement, Stakeholder, Viewpoint, View, Model, Catalog, Matrix, Diagram
+
+* Strategy, Business, Application, Technology And Physical, Motivation, Implementation and Migration, Other, Relations, Views ->
