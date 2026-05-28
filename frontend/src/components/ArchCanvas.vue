@@ -197,6 +197,26 @@ const ELEMENT_MARKUP = [
   { tagName: 'use',  selector: 'icon' },
 ]
 
+// ── Group rendering helpers ───────────────────────────────────────────────────
+const TAB_H = 18  // GroupFigure.java TOPBAR_HEIGHT = 18
+
+function darkenColor(hex) {
+  if (!hex || hex.length < 7) return '#cccccc'
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const d = (v) => Math.max(0, Math.floor(v * 0.78)).toString(16).padStart(2, '0')
+  return `#${d(r)}${d(g)}${d(b)}`
+}
+
+function labelColor(bgHex) {
+  if (!bgHex || bgHex.length < 7) return '#333'
+  const r = parseInt(bgHex.slice(1, 3), 16)
+  const g = parseInt(bgHex.slice(3, 5), 16)
+  const b = parseInt(bgHex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 128 ? '#333' : '#fff'
+}
+
 // ── Graph init ────────────────────────────────────────────────────────────────
 function initGraph() {
   if (!containerRef.value) return
@@ -254,14 +274,41 @@ function renderDiagram() {
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 0,
-        label: n.name,
+        markup: [
+          { tagName: 'rect', selector: 'body' },
+          { tagName: 'rect', selector: 'tab'  },
+          { tagName: 'text', selector: 'label' },
+        ],
         data: { type: 'group', name: n.name, id: n.id },
         attrs: {
-          body:  { fill: n.fill_color || '#f0f0f0', stroke:'#aaa',
-                   strokeWidth:1, rx:4, ry:4 },
-          label: { fontSize:11, fontWeight:600, fill:'#333',
-                   textAnchor:'middle', textVerticalAnchor:'top',
-                   refX:'50%', refY:6 },
+          body: {
+            x: 0, y: TAB_H,
+            width: n.width,
+            height: Math.max(0, n.height - TAB_H),
+            fill: n.fill_color || '#f0f0f0',
+            stroke: '#999', strokeWidth: 1,
+          },
+          tab: {
+            x: 0, y: 0,
+            width: Math.floor(n.width / 2),
+            height: TAB_H,
+            fill: darkenColor(n.fill_color || '#f0f0f0'),
+            stroke: '#999', strokeWidth: 1,
+          },
+          label: {
+            text: n.name,
+            x: Math.floor(n.width / 4),
+            y: TAB_H / 2,
+            textAnchor: 'middle',
+            textVerticalAnchor: 'middle',
+            fontSize: 11, fontWeight: 600,
+            fill: labelColor(n.fill_color || '#f0f0f0'),
+            textWrap: {
+              text: n.name,
+              width: Math.floor(n.width / 2) - 8,
+              ellipsis: true,
+            },
+          },
         },
       })
     } else if (n.type === 'element') {
