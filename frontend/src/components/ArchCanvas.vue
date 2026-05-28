@@ -559,6 +559,15 @@ watch(() => store.selected, node => {
   // canvas stays showing the current diagram
 })
 
+function clearDiagram() {
+  diagramData.value = null
+  currentViewId.value = null
+  isDirty.value = false
+  graph?.clearCells()
+}
+
+defineExpose({ clearDiagram })
+
 onMounted(initGraph)
 onUnmounted(() => {
   resizeObserver?.disconnect()

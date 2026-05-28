@@ -154,6 +154,7 @@ function triggerOpen() {
 function onNew() {
   if (!confirm('Reset to a new empty model? Unsaved changes will be lost.')) return
   store.resetModel()
+  canvasRef.value?.clearDiagram()
   showToast('New model created — not saved yet')
 }
 
