@@ -7,6 +7,18 @@
     </button>
 
     <div v-if="!collapsed" class="palette-content">
+      <!-- Pointer / normal mode button -->
+      <div class="palette-pointer-row">
+        <div
+          class="palette-type-icon palette-icon-relation"
+          :class="{ 'palette-icon-active': !store.activePaletteItem }"
+          title="Select (normal mode)"
+          @click="store.resetPaletteSelection()"
+        >
+          <i class="fa-solid fa-arrow-pointer" style="font-size:13px; color:#495057;"></i>
+        </div>
+      </div>
+      <div class="palette-divider"></div>
 
       <!-- ── Element layers — 3 icons per row, no labels ─── -->
       <template v-for="(layer, idx) in LAYERS" :key="layer.folder_type">
@@ -16,9 +28,14 @@
             v-for="et in layer.types"
             :key="et"
             class="palette-type-icon"
-            draggable="true"
+            :class="{
+              'palette-icon-relation': true,
+              'palette-icon-active': store.activePaletteItem?.value === et,
+            }"
+            :draggable="!layer.isRelations"
             :title="humanizeType(et)"
-            @dragstart="onDragStart($event, et, layer.folder_type)"
+            @click="store.selectPaletteItem(layer.isRelations ? 'conn' : 'elem', et)"
+            @dragstart="!layer.isRelations && onDragStart($event, et, layer.folder_type)"
           >
             <img
               v-if="PALETTE_ICON[et]"
@@ -41,6 +58,9 @@ import { ref, reactive } from 'vue'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
 import { PALETTE_ICON } from '../archimate-palette-icons.js'
+import { useModelStore } from '../stores/model'
+
+const store = useModelStore()
 
 const emit = defineEmits(['connection-type-changed'])
 

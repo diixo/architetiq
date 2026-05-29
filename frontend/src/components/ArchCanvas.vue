@@ -50,16 +50,12 @@ import { ELEMENT_ICON } from '../archimate-icons.js'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
 
-const props = defineProps({
-  connectionType: { type: String, default: null },
-})
-
-const store         = useModelStore()
-const containerRef  = ref(null)
-const diagramData   = ref(null)
-const loading       = ref(false)
-const isDirty       = ref(false)
-const currentViewId = ref(null)
+const store            = useModelStore()
+const containerRef     = ref(null)
+const diagramData      = ref(null)
+const loading          = ref(false)
+const isDirty          = ref(false)
+const currentViewId    = ref(null)
 let graph = null
 let resizeObserver = null
 
@@ -249,6 +245,7 @@ function initGraph() {
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true })
   graph.on('node:resized',       () => { isDirty.value = true })
+  graph.on('edge:connected',     ({ edge }) => applyConnTypeToEdge(edge))
   graph.on('edge:added',         ({ edge }) => {
     if (!edge.getData()?.isLoaded) isDirty.value = true
   })
@@ -532,25 +529,20 @@ function onDrop(e) {
   isDirty.value = true
 }
 
-// ── Watch connectionType from palette ─────────────────────────────────────────
-watch(() => props.connectionType, (relType) => {
-  if (!graph) return
-  // Store on newly created edges
-  graph.off('edge:connected')
-  if (relType) {
-    graph.on('edge:connected', ({ edge }) => {
-      edge.setData({ type: relType })
-      const s = edgeStyle(relType)
-      edge.setAttrs({
-        line: {
-          stroke: s.stroke, strokeWidth: s.strokeWidth,
-          ...(s.dash ? { strokeDasharray: s.dash } : {}),
-          sourceMarker: s.src, targetMarker: s.tgt,
-        },
-      })
-    })
-  }
-})
+// ── Apply active connection type to newly drawn edges ─────────────────────────
+function applyConnTypeToEdge(edge) {
+  const relType = store.activeConnType
+  edge.setData({ type: relType })
+  const s = edgeStyle(relType)
+  edge.setAttrs({
+    line: {
+      stroke: s.stroke, strokeWidth: s.strokeWidth,
+      ...(s.dash ? { strokeDasharray: s.dash } : {}),
+      sourceMarker: s.src, targetMarker: s.tgt,
+    },
+  })
+  isDirty.value = true
+}
 
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => store.selected, node => {

@@ -8,6 +8,19 @@ export const useModelStore = defineStore('model', () => {
   const error = ref(null)
   const filterQuery = ref('')
   const editingNodeId = ref(null)
+  const activeConnType  = ref('AssociationRelationship')
+  // Currently selected palette icon (type + value), null = normal pointer mode
+  const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
+
+  function selectPaletteItem(kind, value) {
+    activePaletteItem.value = { kind, value }
+    if (kind === 'conn') activeConnType.value = value
+  }
+
+  function resetPaletteSelection() {
+    activePaletteItem.value = null
+    activeConnType.value = 'AssociationRelationship'
+  }
 
   function genId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -236,6 +249,7 @@ export const useModelStore = defineStore('model', () => {
   return {
     model, selected, loading, error, filterQuery, editingNodeId,
     fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
+    activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
     loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement, addView,
   }
 })

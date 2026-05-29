@@ -59,6 +59,13 @@ html, body { height: 100%; margin: 0; }
 .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-children { padding-left: 1rem; }
 
+.canvas-conn-select {
+  font-size: 0.75rem !important;
+  padding: 1px 4px !important;
+  height: 22px !important;
+  width: 108px;
+}
+
 /* ── Canvas Palette ──────────────────────────────────────────────────────── */
 .palette-panel {
   width: 92px;
@@ -164,6 +171,9 @@ html, body { height: 100%; margin: 0; }
 }
 .palette-type-icon:hover { outline: 1.5px solid #0d6efd; border-radius: 2px; }
 .palette-type-icon:active { cursor: grabbing; }
+.palette-icon-relation { cursor: pointer; }
+.palette-icon-active { outline: 2px solid #0d6efd !important; border-radius: 2px; background: #e3f2fd; }
+.palette-pointer-row { display: flex; padding: 2px 0 2px 0; }
 
 /* Context menu */
 .tree-ctx-menu {
