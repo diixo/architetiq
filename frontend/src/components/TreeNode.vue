@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useModelStore } from '../stores/model'
 import TreeContextMenu from './TreeContextMenu.vue'
 
@@ -102,15 +102,20 @@ function openCtx(e) {
   ctxRef.value?.open(e.clientX, e.clientY)
 }
 
-// Start editing when store.editingNodeId matches this node
-watch(() => store.editingNodeId, async (id) => {
-  if (id === props.node.id) {
-    isOpen.value = true
-    await nextTick()
-    startEdit()
-    store.editingNodeId = null
-  }
+// Expand when store signals this folder should open (to render new children)
+watch(() => store.pendingOpenId, (id) => {
+  if (id && id === props.node.id) isOpen.value = true
 })
+
+// Start editing when editingNodeId matches — on watch or on mount
+function checkEditingId(id) {
+  if (id && id === props.node.id) {
+    store.editingNodeId = null
+    startEdit()
+  }
+}
+watch(() => store.editingNodeId, checkEditingId)
+onMounted(() => checkEditingId(store.editingNodeId))
 
 async function startEdit() {
   editValue.value = props.node.name

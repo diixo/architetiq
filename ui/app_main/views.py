@@ -9,21 +9,19 @@ from django.conf import settings
 
 
 _DEFAULT_MODEL = {
-    "name": "*New Model",
-    "type": "model",
+    "name": "*New Model", "type": "model", "id": "00000000-0000-0000-0000-000000000000",
     "children": [
-        {"name": "Strategy",                     "type": "node", "folder_type": "strategy",                "children": []},
-        {"name": "Business",                     "type": "node", "folder_type": "business",                "children": []},
-        {"name": "Application",                  "type": "node", "folder_type": "application",             "children": []},
-        {"name": "Technology And Physical",      "type": "node", "folder_type": "technology",              "children": []},
-        {"name": "Motivation",                   "type": "node", "folder_type": "motivation",              "children": []},
-        {"name": "Implementation and Migration", "type": "node", "folder_type": "implementation_migration","children": []},
-        {"name": "Other",                        "type": "node", "folder_type": "other",                   "children": []},
-        {"name": "Relations",                    "type": "node", "folder_type": "relations",               "children": []},
-        {"name": "Views", "type": "node", "folder_type": "diagrams", "children": [
-            {"name": "Default View", "type": "view",
-             "element_type": "ArchimateDiagramModel",
-             "id": "00000000-0000-0000-0000-000000000001",
+        {"id": "00000000-0000-0000-0001-000000000001", "name": "Strategy",                     "type": "node", "folder_type": "strategy",                "children": []},
+        {"id": "00000000-0000-0000-0001-000000000002", "name": "Business",                     "type": "node", "folder_type": "business",                "children": []},
+        {"id": "00000000-0000-0000-0001-000000000003", "name": "Application",                  "type": "node", "folder_type": "application",             "children": []},
+        {"id": "00000000-0000-0000-0001-000000000004", "name": "Technology And Physical",      "type": "node", "folder_type": "technology",              "children": []},
+        {"id": "00000000-0000-0000-0001-000000000005", "name": "Motivation",                   "type": "node", "folder_type": "motivation",              "children": []},
+        {"id": "00000000-0000-0000-0001-000000000006", "name": "Implementation and Migration", "type": "node", "folder_type": "implementation_migration", "children": []},
+        {"id": "00000000-0000-0000-0001-000000000007", "name": "Other",                        "type": "node", "folder_type": "other",                   "children": []},
+        {"id": "00000000-0000-0000-0001-000000000008", "name": "Relations",                    "type": "node", "folder_type": "relations",               "children": []},
+        {"id": "00000000-0000-0000-0001-000000000009", "name": "Views",                        "type": "node", "folder_type": "diagrams",                "children": [
+            {"id": "00000000-0000-0000-0000-000000000001", "name": "Default View",
+             "type": "view", "element_type": "ArchimateDiagramModel",
              "documentation": "", "children": []},
         ]},
     ]
@@ -57,12 +55,18 @@ _FOLDER_TYPE_BY_NAME = {
 
 
 def _migrate_folder_types(model):
-    """Add folder_type to top-level folders that are missing it (migration for old models)."""
-    for child in model.get("children", []):
-        if child.get("type") == "node" and not child.get("folder_type"):
+    """Add folder_type and id to top-level folders missing them."""
+    import uuid as _uuid
+    for i, child in enumerate(model.get("children", [])):
+        if child.get("type") != "node":
+            continue
+        if not child.get("folder_type"):
             ft = _FOLDER_TYPE_BY_NAME.get(child.get("name", ""))
             if ft:
                 child["folder_type"] = ft
+        if not child.get("id"):
+            # Deterministic id based on position so it stays stable across reloads
+            child["id"] = f"00000000-0000-0000-0001-{(i+1):012d}"
     return model
 
 

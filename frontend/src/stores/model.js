@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 export const useModelStore = defineStore('model', () => {
   const model = ref(null)
@@ -9,6 +9,7 @@ export const useModelStore = defineStore('model', () => {
   const filterQuery = ref('')
   const editingNodeId = ref(null)
   const activeConnType  = ref('AssociationRelationship')
+  const pendingOpenId   = ref(null)  // folder to expand before editing new child
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
 
@@ -47,48 +48,41 @@ export const useModelStore = defineStore('model', () => {
     saveModel()
   }
 
-  function addChildFolder(parentId) {
+  async function _addChild(parentId, newNode) {
     const parent = findById(parentId)
-    if (!parent) return
-    const id = genId()
+    // Only folder nodes (type: 'node') can have children
+    if (!parent || parent.type !== 'node') return
     parent.children = parent.children || []
-    parent.children.push({ id, name: 'New Folder', type: 'node', children: [] })
-    editingNodeId.value = id
+    parent.children.push(newNode)
+    // Step 1: expand parent so children render
+    pendingOpenId.value = parentId
+    await nextTick()
+    pendingOpenId.value = null
+    // Step 2: now the new child's TreeNode is mounted → trigger edit
+    await nextTick()
+    editingNodeId.value = newNode.id
   }
 
-  function addView(parentId, viewType = 'ArchimateDiagramModel') {
-    const parent = findById(parentId)
-    if (!parent) return
+  async function addChildFolder(parentId) {
+    await _addChild(parentId, { id: genId(), name: 'New Folder', type: 'node', children: [] })
+  }
+
+  async function addView(parentId, viewType = 'ArchimateDiagramModel') {
     const id = genId()
     const label = viewType === 'SketchModel' ? 'New Sketch' : 'New View'
-    parent.children = parent.children || []
-    parent.children.push({
-      id,
-      name: label,
-      type: 'view',
-      element_type: viewType,
-      documentation: '',
-      children: [],
-    })
-    editingNodeId.value = id
+    await _addChild(parentId, { id, name: label, type: 'view',
+      element_type: viewType, documentation: '', children: [] })
     saveModel()
   }
 
-  function addElement(parentId, elementType) {
-    const parent = findById(parentId)
-    if (!parent) return
+  async function addElement(parentId, elementType) {
     const id = genId()
-    const newEl = {
+    await _addChild(parentId, {
       id,
       name: elementType.replace(/([A-Z])/g, ' $1').trim(),
-      type: 'element',
-      element_type: elementType,
-      documentation: '',
-      children: [],
-    }
-    parent.children = parent.children || []
-    parent.children.push(newEl)
-    editingNodeId.value = id
+      type: 'element', element_type: elementType,
+      documentation: '', children: [],
+    })
     saveModel()
   }
 
@@ -105,11 +99,13 @@ export const useModelStore = defineStore('model', () => {
   }
 
   function migrateFolderTypes(m) {
-    for (const child of (m.children || [])) {
-      if (child.type === 'node' && !child.folder_type && TOP_FOLDER_TYPES[child.name]) {
+    ;(m.children || []).forEach((child, i) => {
+      if (child.type !== 'node') return
+      if (!child.folder_type && TOP_FOLDER_TYPES[child.name])
         child.folder_type = TOP_FOLDER_TYPES[child.name]
-      }
-    }
+      if (!child.id)
+        child.id = `00000000-0000-0000-0001-${String(i + 1).padStart(12, '0')}`
+    })
     return m
   }
 
@@ -126,21 +122,19 @@ export const useModelStore = defineStore('model', () => {
   }
 
   const DEFAULT_MODEL = {
-    name: '*New Model',
-    type: 'model',
+    name: '*New Model', type: 'model', id: '00000000-0000-0000-0000-000000000000',
     children: [
-      { name: 'Strategy',                     type: 'node', children: [] },
-      { name: 'Business',                     type: 'node', children: [] },
-      { name: 'Application',                  type: 'node', children: [] },
-      { name: 'Technology And Physical',      type: 'node', children: [] },
-      { name: 'Motivation',                   type: 'node', children: [] },
-      { name: 'Implementation and Migration', type: 'node', children: [] },
-      { name: 'Other',                        type: 'node', children: [] },
-      { name: 'Relations',                    type: 'node', children: [] },
-      { name: 'Views', type: 'node', folder_type: 'diagrams', children: [
-        { name: 'Default View', type: 'view',
-          element_type: 'ArchimateDiagramModel',
-          id: '00000000-0000-0000-0000-000000000001',
+      { id: '00000000-0000-0000-0001-000000000001', name: 'Strategy',                     type: 'node', folder_type: 'strategy',                children: [] },
+      { id: '00000000-0000-0000-0001-000000000002', name: 'Business',                     type: 'node', folder_type: 'business',                children: [] },
+      { id: '00000000-0000-0000-0001-000000000003', name: 'Application',                  type: 'node', folder_type: 'application',             children: [] },
+      { id: '00000000-0000-0000-0001-000000000004', name: 'Technology And Physical',      type: 'node', folder_type: 'technology',              children: [] },
+      { id: '00000000-0000-0000-0001-000000000005', name: 'Motivation',                   type: 'node', folder_type: 'motivation',              children: [] },
+      { id: '00000000-0000-0000-0001-000000000006', name: 'Implementation and Migration', type: 'node', folder_type: 'implementation_migration', children: [] },
+      { id: '00000000-0000-0000-0001-000000000007', name: 'Other',                        type: 'node', folder_type: 'other',                   children: [] },
+      { id: '00000000-0000-0000-0001-000000000008', name: 'Relations',                    type: 'node', folder_type: 'relations',               children: [] },
+      { id: '00000000-0000-0000-0001-000000000009', name: 'Views',                        type: 'node', folder_type: 'diagrams',                children: [
+        { id: '00000000-0000-0000-0000-000000000001', name: 'Default View',
+          type: 'view', element_type: 'ArchimateDiagramModel',
           documentation: '', children: [] },
       ]},
     ],
@@ -250,6 +244,7 @@ export const useModelStore = defineStore('model', () => {
     model, selected, loading, error, filterQuery, editingNodeId,
     fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
     activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
+    pendingOpenId,
     loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement, addView,
   }
 })

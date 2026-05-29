@@ -306,3 +306,98 @@ class FolderTypeTests(TestCase):
             r = client.get('/api/model/')
         folder = r.json()['children'][0]
         self.assertEqual(folder.get('folder_type'), 'business')
+
+
+class FolderIdMigrationTests(TestCase):
+    """_migrate_folder_types додає id і folder_type до папок без них."""
+
+    def _patch(self, model_file, grafico='/nonexistent'):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=model_file,
+                              _GRAFICO_DIR=grafico)
+
+    def test_default_model_all_folders_have_ids(self):
+        """Усі папки DEFAULT_MODEL мають id."""
+        from app_main.views import _DEFAULT_MODEL
+        for folder in _DEFAULT_MODEL['children']:
+            self.assertIn('id', folder, f"No id for {folder['name']}")
+            self.assertTrue(folder['id'], f"Empty id for {folder['name']}")
+
+    def test_migrate_adds_id_to_folder_without_id(self):
+        """Міграція додає id до папки без id."""
+        from app_main.views import _migrate_folder_types
+        model = {
+            'name': 'M', 'type': 'model',
+            'children': [
+                {'name': 'Business', 'type': 'node', 'folder_type': 'business', 'children': []},
+                {'name': 'Strategy', 'type': 'node', 'folder_type': 'strategy', 'children': []},
+            ]
+        }
+        result = _migrate_folder_types(model)
+        for folder in result['children']:
+            self.assertIn('id', folder)
+            self.assertTrue(folder['id'])
+
+    def test_migrate_preserves_existing_id(self):
+        """Міграція не змінює існуючий id."""
+        from app_main.views import _migrate_folder_types
+        model = {
+            'name': 'M', 'type': 'model',
+            'children': [
+                {'id': 'my-custom-uuid', 'name': 'Business', 'type': 'node',
+                 'folder_type': 'business', 'children': []},
+            ]
+        }
+        result = _migrate_folder_types(model)
+        self.assertEqual(result['children'][0]['id'], 'my-custom-uuid')
+
+    def test_migrate_adds_folder_type_by_name(self):
+        """Міграція додає folder_type за іменем папки."""
+        from app_main.views import _migrate_folder_types
+        model = {
+            'name': 'M', 'type': 'model',
+            'children': [
+                {'id': 'x1', 'name': 'Motivation', 'type': 'node', 'children': []},
+                {'id': 'x2', 'name': 'Relations',  'type': 'node', 'children': []},
+            ]
+        }
+        result = _migrate_folder_types(model)
+        self.assertEqual(result['children'][0]['folder_type'], 'motivation')
+        self.assertEqual(result['children'][1]['folder_type'], 'relations')
+
+    def test_api_returns_folders_with_ids(self):
+        """GET /api/model/ повертає папки з id."""
+        import tempfile
+        tmpdir = tempfile.mkdtemp()
+        model_file = os.path.join(tmpdir, 'model.json')
+        # Save a model without ids
+        payload = {
+            'name': 'Test', 'type': 'model',
+            'children': [
+                {'name': 'Business', 'type': 'node', 'folder_type': 'business', 'children': []},
+            ]
+        }
+        with open(model_file, 'w') as f:
+            json.dump(payload, f)
+        client = Client(enforce_csrf_checks=False)
+        with self._patch(model_file):
+            r = client.get('/api/model/')
+        data = r.json()
+        business = next(c for c in data['children'] if c['name'] == 'Business')
+        self.assertIn('id', business)
+        self.assertTrue(business['id'])
+
+    def test_generated_ids_are_unique_per_folder(self):
+        """Згенеровані id унікальні для кожної папки."""
+        from app_main.views import _migrate_folder_types
+        model = {
+            'name': 'M', 'type': 'model',
+            'children': [
+                {'name': n, 'type': 'node', 'children': []}
+                for n in ['Strategy', 'Business', 'Application', 'Technology And Physical',
+                          'Motivation', 'Implementation and Migration', 'Other', 'Relations', 'Views']
+            ]
+        }
+        result = _migrate_folder_types(model)
+        ids = [c['id'] for c in result['children']]
+        self.assertEqual(len(ids), len(set(ids)), "Duplicate ids generated")

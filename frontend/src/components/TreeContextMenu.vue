@@ -155,8 +155,8 @@ function onAddFolder() {
 
 function onAddElement(et) {
   const id = targetFolderId()
-  if (!id) { close(); return }
-  // Views (ArchimateDiagramModel, SketchModel) → add as view type
+  console.log('[ctx] onAddElement', et, '| node:', props.node?.name, '| id:', id, '| model:', !!store.model)
+  if (!id) { console.warn('[ctx] no targetId'); close(); return }
   if (et === 'ArchimateDiagramModel' || et === 'SketchModel') {
     store.addView(id, et)
   } else {

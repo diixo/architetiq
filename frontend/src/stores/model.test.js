@@ -70,13 +70,19 @@ describe('resetModel', () => {
     expect(names).toEqual(DEFAULT_NAMES)
   })
 
-  it('all default folders are empty nodes', () => {
+  it('all default folders are nodes', () => {
     const store = useModelStore()
     store.resetModel()
     store.model.children.forEach(c => {
       expect(c.type).toBe('node')
-      expect(c.children).toHaveLength(0)
     })
+  })
+
+  it('Views folder contains Default View', () => {
+    const store = useModelStore()
+    store.resetModel()
+    const views = store.model.children.find(c => c.name === 'Views')
+    expect(views.children.some(v => v.name === 'Default View')).toBe(true)
   })
 
   it('clears selected', () => {
