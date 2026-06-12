@@ -27,8 +27,9 @@ _DEFAULT_MODEL = {
     ]
 }
 
-_MODEL_FILE    = os.path.join(os.path.dirname(__file__), "data", "model.json")
-_DIAGRAMS_DIR  = os.path.join(os.path.dirname(__file__), "data", "diagrams")
+_MODEL_FILE   = os.path.join(os.path.dirname(__file__), "data", "model.json")
+_UPLOADS_DIR  = os.path.join(os.path.dirname(__file__), "data", "uploads")
+_DIAGRAMS_DIR = os.path.join(os.path.dirname(__file__), "data", "diagrams")
 
 _GRAFICO_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..", "data", "aspice-archi-prj", "model")
@@ -573,6 +574,178 @@ def _parse_diagram_file(xml_path, elements_index):
     }
 
 
+def _collect_bps(conn_elem):
+    """Extract raw bendpoints from a sourceConnection element."""
+    bps = []
+    for child in conn_elem:
+        if _local(child.tag) == 'bendpoint':
+            bps.append({
+                'startX': int(child.get('startX', 0)),
+                'startY': int(child.get('startY', 0)),
+                'endX':   int(child.get('endX', 0)),
+                'endY':   int(child.get('endY', 0)),
+            })
+    return bps
+
+
+def _parse_native_diagram(view_elem, elements_index):
+    """Parse diagram visual data from a native .archimate view element.
+
+    Native format uses:
+      <child xsi:type="archimate:DiagramObject" archimateElement="elem-id">
+      <child xsi:type="archimate:Group" name="...">
+      <sourceConnection xsi:type="archimate:Connection" archimateRelationship="rel-id">
+    """
+    nodes, edges = [], []
+    node_bounds = {}
+
+    def get_bounds(elem):
+        for child in elem:
+            if _local(child.tag) == 'bounds':
+                return (
+                    int(child.get('x', 0)), int(child.get('y', 0)),
+                    int(child.get('width', 120)), int(child.get('height', 55)),
+                )
+        return 0, 0, 120, 55
+
+    def parse_child(elem, px=0, py=0, parent_id=None):
+        xsi_type = _el_type(elem.get(_XSI_TYPE, ''))
+        oid = elem.get('id', '')
+        bx, by, bw, bh = get_bounds(elem)
+        ax, ay = px + bx, py + by
+        node_bounds[oid] = (ax, ay, bw, bh)
+
+        # Collect outgoing connections from this element
+        for sub in elem:
+            stag = _local(sub.tag)
+            if stag == 'sourceConnection':
+                rel_id = sub.get('archimateRelationship', '')
+                rel_info = elements_index.get(rel_id, {})
+                edges.append({
+                    'id':     sub.get('id', ''),
+                    'type':   rel_info.get('element_type', ''),
+                    'source': sub.get('source', oid),
+                    'target': sub.get('target', ''),
+                    '_raw_bps': _collect_bps(sub),
+                })
+
+        if xsi_type in ('DiagramObject', 'DiagramModelArchimateObject'):
+            # ArchiMate element rendered on canvas
+            el_id = elem.get('archimateElement', '')
+            # Grafico compat: may be a child element with href
+            if not el_id:
+                for sub in elem:
+                    if _local(sub.tag) == 'archimateElement':
+                        href = sub.get('href', '')
+                        el_id = href.split('#')[-1] if '#' in href else href
+                        break
+            info = elements_index.get(el_id, {})
+            entry = {
+                'id': oid, 'type': 'element',
+                'name': info.get('name', ''),
+                'element_id': el_id,
+                'element_type': info.get('element_type', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            }
+            if parent_id:
+                entry['parent_id'] = parent_id
+            nodes.append(entry)
+            # Recurse embedded children
+            for sub in elem:
+                if _local(sub.tag) == 'child':
+                    parse_child(sub, ax, ay, parent_id=oid)
+
+        elif xsi_type in ('Group', 'DiagramModelGroup'):
+            fill = elem.get('fillColor', '#f5f5f5')
+            nodes.append({
+                'id': oid, 'type': 'group',
+                'name': elem.get('name', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+                'fill_color': fill,
+            })
+            for sub in elem:
+                if _local(sub.tag) in ('child', 'children'):
+                    parse_child(sub, ax, ay)
+
+        elif xsi_type in ('Note', 'DiagramModelNote'):
+            content = ''
+            for sub in elem:
+                if _local(sub.tag) == 'content':
+                    content = sub.text or ''
+            nodes.append({
+                'id': oid, 'type': 'note',
+                'name': content or elem.get('name', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            })
+
+        elif xsi_type in ('DiagramModelReference',):
+            ref_id = elem.get('model', '')
+            # Grafico compat: may be a child element with href
+            if not ref_id:
+                for sub in elem:
+                    if _local(sub.tag) == 'referencedModel':
+                        href = sub.get('href', '')
+                        ref_id = href.split('#')[-1] if '#' in href else href
+                        break
+            nodes.append({
+                'id': oid, 'type': 'view_ref',
+                'name': '', 'ref_id': ref_id,
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            })
+
+    for child in view_elem:
+        if _local(child.tag) == 'child':
+            parse_child(child)
+
+    # Resolve relative bendpoints to absolute coordinates
+    for edge in edges:
+        raw_bps = edge.pop('_raw_bps', [])
+        if not raw_bps:
+            edge['vertices'] = []
+            continue
+        sx, sy, sw, sh = node_bounds.get(edge['source'], (0, 0, 120, 55))
+        tx, ty, tw, th = node_bounds.get(edge['target'], (0, 0, 120, 55))
+        src_cx, src_cy = sx + sw / 2, sy + sh / 2
+        tgt_cx, tgt_cy = tx + tw / 2, ty + th / 2
+        n = len(raw_bps)
+        vertices = []
+        for i, bp in enumerate(raw_bps):
+            w = (i + 1) / (n + 1)
+            abs_x = round((1 - w) * (src_cx + bp['startX']) + w * (tgt_cx + bp['endX']))
+            abs_y = round((1 - w) * (src_cy + bp['startY']) + w * (tgt_cy + bp['endY']))
+            vertices.append({'x': abs_x, 'y': abs_y})
+        edge['vertices'] = vertices
+
+    return {
+        'id':            view_elem.get('id', ''),
+        'name':          view_elem.get('name', ''),
+        'documentation': view_elem.get('documentation', ''),
+        'nodes': nodes,
+        'edges': edges,
+    }
+
+
+def _find_model_view(view_id):
+    """Return (root, view_elem) from the uploaded .archimate file, or (None, None).
+
+    The path to the uploaded file is stored in model.json under '_source'.
+    """
+    model = _load_model()
+    source = model.get('_source', '')
+    if not source or not os.path.isfile(source):
+        return None, None
+    try:
+        root = ET.parse(source).getroot()
+    except ET.ParseError:
+        return None, None
+    for elem in root.iter():
+        if elem.get('id') == view_id:
+            et = _el_type(elem.get(_XSI_TYPE, ''))
+            if et in _VIEW_TYPES:
+                return root, elem
+    return None, None
+
+
 def _layout_path(view_id):
     return os.path.join(_DIAGRAMS_DIR, f"{view_id}.json")
 
@@ -600,16 +773,26 @@ def _apply_saved_layout(data, view_id):
 
 def api_diagram(request, view_id):
     model = _load_model()
+    elements_index = _build_elements_index(model)
+
+    # 1. Try Grafico multi-file diagram
     diagram_file = _find_diagram_file(view_id)
     if diagram_file:
         try:
-            data = _parse_diagram_file(diagram_file, _build_elements_index(model))
+            data = _parse_diagram_file(diagram_file, elements_index)
             data = _apply_saved_layout(data, view_id)
             return JsonResponse(data)
         except ET.ParseError as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-    # Fallback: basic info from model tree
+    # 2. Try model.archimate diagram
+    _, view_elem = _find_model_view(view_id)
+    if view_elem is not None:
+        data = _parse_native_diagram(view_elem, elements_index)
+        data = _apply_saved_layout(data, view_id)
+        return JsonResponse(data)
+
+    # 3. Fallback: return empty diagram (blank canvas for user-created views)
     def find_node(node, tid):
         if node.get('id') == tid:
             return node
@@ -622,7 +805,12 @@ def api_diagram(request, view_id):
     node = find_node(model, view_id)
     if node is None:
         return JsonResponse({'error': 'Not found'}, status=404)
-    return JsonResponse(node)
+    return JsonResponse({
+        'id': view_id,
+        'name': node.get('name', ''),
+        'documentation': node.get('documentation', ''),
+        'nodes': [], 'edges': [],
+    })
 
 
 def api_diagram_save(request, view_id):
@@ -638,6 +826,21 @@ def api_diagram_save(request, view_id):
     return JsonResponse({'ok': True})
 
 
+def _read_archimate_bytes(raw):
+    """Return XML bytes from .archimate (plain XML or ZIP archive with model.xml)."""
+    stripped = raw.lstrip()
+    if stripped.startswith(b'<?xml') or stripped.startswith(b'<'):
+        return raw
+    try:
+        import zipfile, io
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            if 'model.xml' in z.namelist():
+                return z.read('model.xml')
+    except Exception:
+        pass
+    return raw
+
+
 def upload_model(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
@@ -645,10 +848,30 @@ def upload_model(request):
     if not f:
         return JsonResponse({"error": "No file provided"}, status=400)
     try:
-        model = _parse_archimate(f.read())
+        raw = _read_archimate_bytes(f.read())
+        model = _parse_archimate(raw)
     except ET.ParseError as e:
         return JsonResponse({"error": f"XML parse error: {e}"}, status=400)
+
+    # Save original file to uploads/ and record its path in the model
+    try:
+        root_tag = ET.fromstring(raw).tag
+        is_native = "opengroup.org" not in root_tag
+    except ET.ParseError:
+        is_native = False
+
+    if is_native:
+        os.makedirs(_UPLOADS_DIR, exist_ok=True)
+        filename = os.path.basename(f.name) or "model.archimate"
+        upload_path = os.path.join(_UPLOADS_DIR, filename)
+        with open(upload_path, "wb") as out:
+            out.write(raw)
+        model["_source"] = upload_path
+    else:
+        model.pop("_source", None)
+
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
     with open(_MODEL_FILE, "w", encoding="utf-8") as out:
         json.dump(model, out, ensure_ascii=False, indent=2)
+
     return JsonResponse({"ok": True, "name": model["name"]})
