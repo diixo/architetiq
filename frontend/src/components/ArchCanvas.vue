@@ -39,11 +39,30 @@
         <p class="mt-2 mb-0" style="font-size:0.875rem;">Select a view from the model tree</p>
       </div>
     </div>
+
+    <!-- Canvas context menu — teleported to body, position here doesn't matter -->
+    <Teleport to="body">
+      <div
+        v-if="ctxMenu.visible"
+        ref="ctxMenuRef"
+        class="canvas-ctx-menu"
+        :style="{ top: ctxMenu.y + 'px', left: ctxMenu.x + 'px' }"
+        @click.stop
+      >
+        <button class="canvas-ctx-item" @click="onCtxProperties">
+          <span class="canvas-ctx-icon"></span>Properties
+        </button>
+        <hr class="canvas-ctx-divider">
+        <button class="canvas-ctx-item canvas-ctx-item-danger" @click="onCtxDelete">
+          <span class="canvas-ctx-icon"><i class="bi bi-trash3"></i></span>Delete
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Graph } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
@@ -59,6 +78,71 @@ const currentViewId    = ref(null)
 let graph = null
 let resizeObserver = null
 let selectedCanvasCell = null
+
+const ctxMenuRef = ref(null)
+const ctxMenu = reactive({ visible: false, x: 0, y: 0, cell: null })
+
+function showCtxMenu(cell, e) {
+  e.preventDefault()
+  ctxMenu.cell    = cell
+  ctxMenu.x       = e.clientX
+  ctxMenu.y       = e.clientY
+  ctxMenu.visible = true
+}
+function hideCtxMenu() {
+  ctxMenu.visible = false
+  ctxMenu.cell    = null
+}
+function onCtxProperties() {
+  const cell = ctxMenu.cell
+  if (cell?.isNode()) {
+    selectedCanvasCell = cell
+    const d = cell.getData()
+    if (d?.element_id) store.selectNode(store.findById(d.element_id) || d)
+    else store.selectNode(d)
+  } else if (cell?.isEdge()) {
+    selectEdge(cell)
+  }
+  hideCtxMenu()
+}
+function onCtxDelete() {
+  if (ctxMenu.cell) {
+    graph.removeCell(ctxMenu.cell)
+    if (selectedCanvasCell === ctxMenu.cell) selectedCanvasCell = null
+  }
+  hideCtxMenu()
+}
+function onCtxOutside(e) {
+  if (ctxMenuRef.value && !ctxMenuRef.value.contains(e.target)) hideCtxMenu()
+}
+
+// ── Edge selection ────────────────────────────────────────────────────────────
+const ENDPOINT_HANDLE_ATTRS = {
+  d: 'M -3 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0',
+  fill: '#0d6efd', stroke: '#fff', 'stroke-width': 1.5, cursor: 'move',
+}
+
+function deselectEdge() {
+  if (!selectedCanvasCell?.isEdge?.()) return
+  const s = edgeStyle(selectedCanvasCell.getData()?.type)
+  selectedCanvasCell.attr('line/stroke', s.stroke)
+  selectedCanvasCell.attr('line/strokeWidth', s.strokeWidth)
+  selectedCanvasCell.removeTools()
+}
+
+function selectEdge(edge) {
+  if (selectedCanvasCell === edge) return
+  deselectEdge()
+  selectedCanvasCell = edge
+  edge.attr('line/stroke', '#0d6efd')
+  edge.attr('line/strokeWidth', Math.max(edge.attr('line/strokeWidth') || 1, 1.5))
+  edge.addTools([
+    { name: 'source-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
+    { name: 'target-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
+    { name: 'vertices', args: { snapRadius: 10, attrs: { circle: { r: 2, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5 } } } },
+    { name: 'segments',  args: { snapRadius: 10 } },
+  ])
+}
 
 // CSRF token helper
 function csrfToken() {
@@ -248,37 +332,14 @@ function initGraph() {
       store.selectNode(d)
     }
   })
-  function deselectEdge() {
-    if (!selectedCanvasCell?.isEdge?.()) return
-    const s = edgeStyle(selectedCanvasCell.getData()?.type)
-    selectedCanvasCell.attr('line/stroke', s.stroke)
-    selectedCanvasCell.attr('line/strokeWidth', s.strokeWidth)
-    selectedCanvasCell.removeTools()
-  }
-  // Circle path r=3 — overrides the default triangle in source/target-arrowhead tools
-  const ENDPOINT_HANDLE_ATTRS = {
-    d: 'M -3 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0',
-    fill: '#0d6efd', stroke: '#fff', 'stroke-width': 1.5, cursor: 'move',
-  }
-
-  function selectEdge(edge) {
-    if (selectedCanvasCell === edge) return
-    deselectEdge()
-    selectedCanvasCell = edge
-    edge.attr('line/stroke', '#0d6efd')
-    edge.attr('line/strokeWidth', Math.max(edge.attr('line/strokeWidth') || 1, 1.5))
-    edge.addTools([
-      { name: 'source-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
-      { name: 'target-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
-      { name: 'vertices', args: { snapRadius: 10, attrs: { circle: { r: 2, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5 } } } },
-      { name: 'segments', args: { snapRadius: 10 } },
-    ])
-  }
   graph.on('edge:click', ({ edge }) => selectEdge(edge))
   graph.on('blank:click', () => {
     deselectEdge()
     selectedCanvasCell = null
+    hideCtxMenu()
   })
+  graph.on('node:contextmenu', ({ node, e }) => showCtxMenu(node, e))
+  graph.on('edge:contextmenu', ({ edge, e }) => showCtxMenu(edge, e))
 
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true })
@@ -632,10 +693,12 @@ defineExpose({ clearDiagram })
 onMounted(() => {
   initGraph()
   document.addEventListener('keydown', onKeyDown)
+  document.addEventListener('mousedown', onCtxOutside, true)
 })
 onUnmounted(() => {
   resizeObserver?.disconnect()
   graph?.dispose()
   document.removeEventListener('keydown', onKeyDown)
+  document.removeEventListener('mousedown', onCtxOutside, true)
 })
 </script>
