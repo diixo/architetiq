@@ -63,11 +63,36 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Graph } from '@antv/x6'
+import { Graph, ToolItem } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
+
+// ── Node selection handles tool (Archi-style: 8 squares at corners + midpoints) ──
+const _NHP = [[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]
+const _NHS = 6, _NHH = 3
+class _NodeSelectionHandles extends ToolItem {
+  onRender() { this.update() }
+  update() {
+    while (this.container.firstChild) this.container.removeChild(this.container.firstChild)
+    const { width, height } = this.cell.getSize()
+    _NHP.forEach(([rx, ry]) => {
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      r.setAttribute('x', String(rx * width - _NHH))
+      r.setAttribute('y', String(ry * height - _NHH))
+      r.setAttribute('width', String(_NHS))
+      r.setAttribute('height', String(_NHS))
+      r.setAttribute('fill', '#fff')
+      r.setAttribute('stroke', '#0d6efd')
+      r.setAttribute('stroke-width', '1.5')
+      r.setAttribute('pointer-events', 'none')
+      this.container.appendChild(r)
+    })
+    return this
+  }
+}
+Graph.registerNodeTool('node-selection-handles', _NodeSelectionHandles, true)
 
 const store            = useModelStore()
 const containerRef     = ref(null)
@@ -96,7 +121,7 @@ function hideCtxMenu() {
 function onCtxProperties() {
   const cell = ctxMenu.cell
   if (cell?.isNode()) {
-    selectedCanvasCell = cell
+    selectNode(cell)
     const d = cell.getData()
     if (d?.element_id) store.selectNode(store.findById(d.element_id) || d)
     else store.selectNode(d)
@@ -116,6 +141,31 @@ function onCtxOutside(e) {
   if (ctxMenuRef.value && !ctxMenuRef.value.contains(e.target)) hideCtxMenu()
 }
 
+// ── Node selection ────────────────────────────────────────────────────────────
+function _nodeDefaultStroke(d) {
+  if (d?.type === 'group') return '#999'
+  if (d?.type === 'note')  return '#ccc'
+  if (d?.type === 'view')  return '#1565c0'
+  return '#888'
+}
+
+function deselectNode() {
+  if (!selectedCanvasCell?.isNode?.()) return
+  selectedCanvasCell.attr('body/stroke', _nodeDefaultStroke(selectedCanvasCell.getData()))
+  selectedCanvasCell.attr('body/strokeWidth', 1)
+  selectedCanvasCell.removeTools()
+}
+
+function selectNode(node) {
+  if (selectedCanvasCell === node) return
+  deselectEdge()
+  deselectNode()
+  selectedCanvasCell = node
+  node.attr('body/stroke', '#0d6efd')
+  node.attr('body/strokeWidth', 2)
+  node.addTools({ local: true, items: [{ name: 'node-selection-handles' }] })
+}
+
 // ── Edge selection ────────────────────────────────────────────────────────────
 const ENDPOINT_HANDLE_ATTRS = {
   d: 'M -3 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0',
@@ -133,6 +183,7 @@ function deselectEdge() {
 function selectEdge(edge) {
   if (selectedCanvasCell === edge) return
   deselectEdge()
+  deselectNode()
   selectedCanvasCell = edge
   edge.attr('line/stroke', '#0d6efd')
   edge.attr('line/strokeWidth', Math.max(edge.attr('line/strokeWidth') || 1, 1.5))
@@ -306,6 +357,7 @@ function initGraph() {
     panning:    { enabled: true, modifiers: 'alt' },
     // ── Enable editing ────────────────────────────────────────────────────────
     interacting: { nodeMovable: true, edgeLabelMovable: false, vertexAddable: false, arrowheadMovable: true },
+    magnetThreshold: 4,
     connecting: {
       snap:             { radius: 50 },
       allowBlank:       false,
@@ -320,8 +372,7 @@ function initGraph() {
 
   // Selection / PropertiesPanel
   graph.on('node:click', ({ node }) => {
-    deselectEdge()
-    selectedCanvasCell = node
+    selectNode(node)
     const d = node.getData()
     if (!d) return
     if (d.element_id) {
@@ -335,6 +386,7 @@ function initGraph() {
   graph.on('edge:click', ({ edge }) => selectEdge(edge))
   graph.on('blank:click', () => {
     deselectEdge()
+    deselectNode()
     selectedCanvasCell = null
     hideCtxMenu()
   })
@@ -517,6 +569,31 @@ function renderDiagram() {
         target: tgtPt,
         data: { isLoaded: true, type: e.type },
         ...(e.vertices?.length ? { vertices: e.vertices } : {}),
+        connector: { name: 'normal' },
+        attrs: {
+          line: {
+            stroke: s.stroke,
+            strokeWidth: s.strokeWidth,
+            ...(s.dash ? { strokeDasharray: s.dash } : {}),
+            sourceMarker: s.src,
+            targetMarker: s.tgt,
+          },
+          wrap: { strokeWidth: 10 },
+        },
+      })
+    } catch (_) { /* skip invalid */ }
+  }
+
+  for (const ue of (diagramData.value.user_edges || [])) {
+    if (!nodeIds.has(ue.source_cell) || !nodeIds.has(ue.target_cell)) continue
+    const s = edgeStyle(ue.type)
+    try {
+      graph.addEdge({
+        id: ue.id || undefined,
+        source: { cell: ue.source_cell },
+        target: { cell: ue.target_cell },
+        data: { isLoaded: true, type: ue.type },
+        ...(ue.vertices?.length ? { vertices: ue.vertices } : {}),
         connector: { name: 'normal' },
         attrs: {
           line: {
