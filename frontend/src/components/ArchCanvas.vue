@@ -444,6 +444,7 @@ function extractLayout() {
     const node = { id: n.id, x, y, width, height }
     if (data.type) node.node_type = data.type
     if (data.element_id) node.element_id = data.element_id
+    if (data.element_type) node.element_type = data.element_type
     if (data.name != null) node.name = data.name
     return node
   })

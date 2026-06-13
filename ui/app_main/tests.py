@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from app_main.views import (
     _DEFAULT_MODEL, _parse_archimate,
     _parse_native_diagram, _build_elements_index,
-    _read_archimate_bytes, _find_model_view,
+    _read_archimate_bytes,
 )
 
 
@@ -624,36 +624,33 @@ class NativeDiagramEndpointTests(TestCase):
         self.client = Client(enforce_csrf_checks=False)
         self._tmpdir = tempfile.mkdtemp()
         self._model_file = os.path.join(self._tmpdir, 'model.json')
-        self._uploads_dir = os.path.join(self._tmpdir, 'uploads')
         self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
 
     def _patch(self):
         return patch.multiple('app_main.views',
                               _MODEL_FILE=self._model_file,
-                              _UPLOADS_DIR=self._uploads_dir,
                               _DIAGRAMS_DIR=self._diagrams_dir,
                               _GRAFICO_DIR='/nonexistent/grafico')
 
-    def test_upload_saves_original_file_in_uploads(self):
-        """Upload saves original .archimate file under uploads/<filename>."""
+    def test_upload_native_does_not_store_source(self):
+        """Upload native .archimate — model.json must NOT contain _source."""
         f = SimpleUploadedFile('test.archimate', ARCHIMATE_WITH_DIAGRAM,
                                content_type='application/octet-stream')
         with self._patch():
             r = self.client.post('/upload/', {'file': f})
         self.assertEqual(r.status_code, 200)
-        saved = os.path.join(self._uploads_dir, 'test.archimate')
-        self.assertTrue(os.path.isfile(saved))
+        with open(self._model_file) as fh:
+            saved_model = json.load(fh)
+        self.assertNotIn('_source', saved_model)
 
-    def test_upload_records_source_path_in_model(self):
-        """model.json contains _source pointing to the uploaded file."""
-        f = SimpleUploadedFile('mymodel.archimate', ARCHIMATE_WITH_DIAGRAM,
+    def test_upload_native_creates_diagram_json(self):
+        """Upload native .archimate — diagram JSON is written to _DIAGRAMS_DIR."""
+        f = SimpleUploadedFile('test.archimate', ARCHIMATE_WITH_DIAGRAM,
                                content_type='application/octet-stream')
         with self._patch():
             self.client.post('/upload/', {'file': f})
-        with open(self._model_file) as fh:
-            saved_model = json.load(fh)
-        self.assertIn('_source', saved_model)
-        self.assertTrue(saved_model['_source'].endswith('mymodel.archimate'))
+        diag_file = os.path.join(self._diagrams_dir, 'v1.json')
+        self.assertTrue(os.path.isfile(diag_file))
 
     def test_upload_exchange_does_not_record_source(self):
         """Exchange Format upload does NOT set _source in model.json."""
@@ -810,7 +807,7 @@ class NativeDiagramParsingEdgeCasesTests(TestCase):
     # ── Multiple views ────────────────────────────────────────────────────────
 
     def test_correct_view_returned_when_multiple_views(self):
-        """When file has multiple views, /api/diagram/ returns the requested one."""
+        """When file has multiple views, each parses independently."""
         xml = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
@@ -837,22 +834,10 @@ class NativeDiagramParsingEdgeCasesTests(TestCase):
             b'</folder>'
             b'</archimate:model>'
         )
-        from app_main.views import _find_model_view, _parse_native_diagram, _parse_archimate, _build_elements_index
-        import tempfile, os
-        tmpdir = tempfile.mkdtemp()
-        src_file = os.path.join(tmpdir, 'multi.archimate')
-        model_file = os.path.join(tmpdir, 'model.json')
-        with open(src_file, 'wb') as f:
-            f.write(xml)
-        with open(model_file, 'w') as f:
-            json.dump({'name': 'M', 'type': 'model', 'id': 'm1',
-                       'children': [], '_source': src_file}, f)
-
-        with patch('app_main.views._MODEL_FILE', model_file):
-            _, view_a = _find_model_view('va')
-            _, view_b = _find_model_view('vb')
-
+        root = ET.fromstring(xml)
         idx = _build_elements_index(_parse_archimate(xml))
+        view_a = next(e for e in root.iter() if e.get('id') == 'va')
+        view_b = next(e for e in root.iter() if e.get('id') == 'vb')
         data_a = _parse_native_diagram(view_a, idx)
         data_b = _parse_native_diagram(view_b, idx)
 
@@ -991,100 +976,6 @@ class NativeDiagramParsingEdgeCasesTests(TestCase):
         self.assertEqual(len(data['edges'][0]['vertices']), 2)
 
 
-class NativeDiagramLifecycleTests(TestCase):
-    """Tests for _source lifecycle and _find_model_view behaviour."""
-
-    def setUp(self):
-        self.client = Client(enforce_csrf_checks=False)
-        self._tmpdir = tempfile.mkdtemp()
-        self._model_file = os.path.join(self._tmpdir, 'model.json')
-        self._uploads_dir = os.path.join(self._tmpdir, 'uploads')
-        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
-
-    def _patch(self):
-        return patch.multiple('app_main.views',
-                              _MODEL_FILE=self._model_file,
-                              _UPLOADS_DIR=self._uploads_dir,
-                              _DIAGRAMS_DIR=self._diagrams_dir,
-                              _GRAFICO_DIR='/nonexistent/grafico')
-
-    def test_find_model_view_returns_none_when_no_source(self):
-        """_find_model_view returns (None, None) when model has no _source."""
-        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': []}
-        with open(self._model_file, 'w') as f:
-            json.dump(model, f)
-        with patch('app_main.views._MODEL_FILE', self._model_file):
-            root, view = _find_model_view('any-id')
-        self.assertIsNone(root)
-        self.assertIsNone(view)
-
-    def test_find_model_view_returns_none_when_source_missing(self):
-        """_find_model_view returns (None, None) when _source file is gone."""
-        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': [],
-                 '_source': '/nonexistent/path.archimate'}
-        with open(self._model_file, 'w') as f:
-            json.dump(model, f)
-        with patch('app_main.views._MODEL_FILE', self._model_file):
-            root, view = _find_model_view('any-id')
-        self.assertIsNone(root)
-        self.assertIsNone(view)
-
-    def test_find_model_view_returns_none_for_unknown_id(self):
-        """_find_model_view returns (None, None) when view_id not in file."""
-        # Write real archimate file as the source
-        src = os.path.join(self._tmpdir, 'src.archimate')
-        with open(src, 'wb') as f:
-            f.write(ARCHIMATE_WITH_DIAGRAM)
-        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': [],
-                 '_source': src}
-        with open(self._model_file, 'w') as f:
-            json.dump(model, f)
-        with patch('app_main.views._MODEL_FILE', self._model_file):
-            root, view = _find_model_view('no-such-view-id')
-        self.assertIsNone(root)
-        self.assertIsNone(view)
-
-    def test_find_model_view_finds_correct_view(self):
-        """_find_model_view returns correct element when _source is set."""
-        src = os.path.join(self._tmpdir, 'src.archimate')
-        with open(src, 'wb') as f:
-            f.write(ARCHIMATE_WITH_DIAGRAM)
-        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': [],
-                 '_source': src}
-        with open(self._model_file, 'w') as f:
-            json.dump(model, f)
-        with patch('app_main.views._MODEL_FILE', self._model_file):
-            root, view = _find_model_view('v1')
-        self.assertIsNotNone(view)
-        self.assertEqual(view.get('id'), 'v1')
-
-    def test_api_diagram_404_for_completely_unknown_view(self):
-        """View not in model tree or source file → 404."""
-        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': []}
-        with open(self._model_file, 'w') as f:
-            json.dump(model, f)
-        with self._patch():
-            r = self.client.get('/api/diagram/totally-unknown-id/')
-        self.assertEqual(r.status_code, 404)
-
-    def test_upload_native_then_exchange_clears_source(self):
-        """After uploading Exchange Format, _source is removed from model.json."""
-        # First upload native
-        f1 = SimpleUploadedFile('proj.archimate', ARCHIMATE_WITH_DIAGRAM,
-                                content_type='application/octet-stream')
-        with self._patch():
-            self.client.post('/upload/', {'file': f1})
-        with open(self._model_file) as fh:
-            self.assertIn('_source', json.load(fh))
-
-        # Then upload Exchange — _source should be gone
-        f2 = SimpleUploadedFile('model.xml', EXCHANGE_XML,
-                                content_type='application/octet-stream')
-        with self._patch():
-            self.client.post('/upload/', {'file': f2})
-        with open(self._model_file) as fh:
-            self.assertNotIn('_source', json.load(fh))
-
 
 class RealFileTests(TestCase):
     """Tests using the actual Test-project.archimate from data/archi/."""
@@ -1140,6 +1031,343 @@ class RealFileTests(TestCase):
             self.assertEqual(node['name'], 'Business Actor')
 
 
+class DiagramSaveTests(TestCase):
+    """Tests for POST /api/diagram/<view_id>/save/ — merge semantics."""
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR='/nonexistent')
+
+    def _diag(self, view_id):
+        with open(os.path.join(self._diagrams_dir, f'{view_id}.json')) as f:
+            return json.load(f)
+
+    def test_save_creates_diagram_file_when_none_exists(self):
+        """POST to a new view creates the diagram JSON file."""
+        payload = {'view_id': 'new-view', 'nodes': [
+            {'id': 'n1', 'x': 10, 'y': 20, 'width': 120, 'height': 55,
+             'node_type': 'element', 'element_id': 'e1', 'name': 'Actor'},
+        ], 'user_edges': []}
+        with self._patch():
+            r = self.client.post('/api/diagram/new-view/save/',
+                                 json.dumps(payload), content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['ok'])
+        self.assertTrue(os.path.isfile(os.path.join(self._diagrams_dir, 'new-view.json')))
+
+    def test_save_updates_existing_node_positions(self):
+        """Save merges positions into existing diagram JSON without destroying edges."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55},
+            ],
+            'edges': [
+                {'id': 'c1', 'source': 'n1', 'target': 'n2',
+                 'type': 'AssignmentRelationship', 'relation_id': 'r1', 'vertices': []},
+            ],
+            'user_edges': [],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        payload = {'view_id': 'v1',
+                   'nodes': [{'id': 'n1', 'x': 100, 'y': 200, 'width': 150, 'height': 70}],
+                   'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved = self._diag('v1')
+        n1 = next(n for n in saved['nodes'] if n['id'] == 'n1')
+        self.assertEqual(n1['x'], 100)
+        self.assertEqual(n1['y'], 200)
+        # edge must still be there with relation_id intact
+        self.assertEqual(len(saved['edges']), 1)
+        self.assertEqual(saved['edges'][0]['relation_id'], 'r1')
+
+    def test_save_appends_new_nodes(self):
+        """New nodes (not in existing diagram) get appended."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [
+                {'id': 'existing', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Old',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55},
+            ],
+            'edges': [], 'user_edges': [],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        payload = {'view_id': 'v1', 'nodes': [
+            {'id': 'new-node', 'x': 50, 'y': 60, 'width': 120, 'height': 55,
+             'node_type': 'element', 'element_id': 'e2',
+             'element_type': 'BusinessProcess', 'name': 'New'},
+        ], 'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        ids = {n['id'] for n in self._diag('v1')['nodes']}
+        self.assertIn('existing', ids)
+        self.assertIn('new-node', ids)
+
+    def test_save_replaces_user_edges(self):
+        """user_edges is replaced entirely on each save."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [], 'edges': [],
+            'user_edges': [
+                {'id': 'old', 'source_cell': 'a', 'target_cell': 'b',
+                 'type': 'AssociationRelationship', 'vertices': []},
+            ],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        payload = {'view_id': 'v1', 'nodes': [], 'user_edges': [
+            {'id': 'new', 'source_cell': 'x', 'target_cell': 'y',
+             'type': 'FlowRelationship', 'vertices': []},
+        ]}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved = self._diag('v1')
+        self.assertEqual(len(saved['user_edges']), 1)
+        self.assertEqual(saved['user_edges'][0]['id'], 'new')
+
+    def test_save_requires_post(self):
+        """GET to /api/diagram/<id>/save/ returns 405."""
+        with self._patch():
+            r = self.client.get('/api/diagram/v1/save/')
+        self.assertEqual(r.status_code, 405)
+
+    def test_save_invalid_json_returns_400(self):
+        """POST with invalid JSON body returns 400."""
+        with self._patch():
+            r = self.client.post('/api/diagram/v1/save/', b'not-json',
+                                 content_type='application/json')
+        self.assertEqual(r.status_code, 400)
+
+
+class RelationIdTests(TestCase):
+    """relation_id is parsed from archimateRelationship and preserved in diagram JSON."""
+
+    def test_edge_has_relation_id(self):
+        """_parse_native_diagram sets relation_id from archimateRelationship attr."""
+        xml = (
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="M" id="m1">'
+            b'<folder name="Views" type="diagrams" id="fv">'
+            b'<element xsi:type="archimate:ArchimateDiagramModel" name="V" id="vx">'
+            b'<child xsi:type="archimate:DiagramObject" id="da" archimateElement="e1">'
+            b'<bounds x="0" y="0" width="120" height="55"/>'
+            b'<sourceConnection xsi:type="archimate:Connection" id="ca"'
+            b' source="da" target="db" archimateRelationship="rel-42"/>'
+            b'</child>'
+            b'<child xsi:type="archimate:DiagramObject" id="db" archimateElement="e2">'
+            b'<bounds x="200" y="0" width="120" height="55"/>'
+            b'</child>'
+            b'</element>'
+            b'</folder>'
+            b'</archimate:model>'
+        )
+        root = ET.fromstring(xml)
+        view = next(e for e in root.iter() if e.get('id') == 'vx')
+        data = _parse_native_diagram(view, {})
+        self.assertEqual(data['edges'][0]['relation_id'], 'rel-42')
+
+    def test_edge_relation_id_empty_when_no_archimate_relationship(self):
+        """Connection without archimateRelationship gets relation_id=''."""
+        xml = (
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="M" id="m1">'
+            b'<folder name="Views" type="diagrams" id="fv">'
+            b'<element xsi:type="archimate:ArchimateDiagramModel" name="V" id="vx">'
+            b'<child xsi:type="archimate:DiagramObject" id="da" archimateElement="e1">'
+            b'<bounds x="0" y="0" width="120" height="55"/>'
+            b'<sourceConnection xsi:type="archimate:Connection" id="ca"'
+            b' source="da" target="db"/>'
+            b'</child>'
+            b'<child xsi:type="archimate:DiagramObject" id="db" archimateElement="e2">'
+            b'<bounds x="200" y="0" width="120" height="55"/>'
+            b'</child>'
+            b'</element>'
+            b'</folder>'
+            b'</archimate:model>'
+        )
+        root = ET.fromstring(xml)
+        view = next(e for e in root.iter() if e.get('id') == 'vx')
+        data = _parse_native_diagram(view, {})
+        self.assertEqual(data['edges'][0]['relation_id'], '')
+
+    def test_upload_diagram_json_preserves_relation_id(self):
+        """Diagram JSON created on upload keeps relation_id in edges."""
+        client = Client(enforce_csrf_checks=False)
+        tmpdir = tempfile.mkdtemp()
+        diagrams_dir = os.path.join(tmpdir, 'diagrams')
+        f = SimpleUploadedFile('test.archimate', ARCHIMATE_WITH_DIAGRAM,
+                               content_type='application/octet-stream')
+        with patch.multiple('app_main.views',
+                            _MODEL_FILE=os.path.join(tmpdir, 'model.json'),
+                            _DIAGRAMS_DIR=diagrams_dir,
+                            _GRAFICO_DIR='/nonexistent'):
+            client.post('/upload/', {'file': f})
+        with open(os.path.join(diagrams_dir, 'v1.json')) as fh:
+            diag = json.load(fh)
+        self.assertEqual(len(diag['edges']), 1)
+        self.assertEqual(diag['edges'][0]['relation_id'], 'r1')
+
+
+class ExportWithDiagramDataTests(TestCase):
+    """Export generates <child> and <sourceConnection> from diagram JSON files."""
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR='/nonexistent')
+
+    def _write_model(self):
+        model = {
+            'name': 'ExportTest', 'type': 'model', 'id': 'mod1',
+            'children': [
+                {'name': 'Business', 'type': 'node', 'id': 'fb',
+                 'folder_type': 'business', 'children': [
+                    {'id': 'e1', 'name': 'Actor', 'type': 'element',
+                     'element_type': 'BusinessActor', 'children': []},
+                    {'id': 'e2', 'name': 'Process', 'type': 'element',
+                     'element_type': 'BusinessProcess', 'children': []},
+                ]},
+                {'name': 'Relations', 'type': 'node', 'id': 'fr',
+                 'folder_type': 'relations', 'children': [
+                    {'id': 'r1', 'name': '', 'type': 'element',
+                     'element_type': 'AssignmentRelationship', 'children': []},
+                ]},
+                {'name': 'Views', 'type': 'node', 'id': 'fv',
+                 'folder_type': 'diagrams', 'children': [
+                    {'id': 'v1', 'name': 'Overview', 'type': 'view',
+                     'element_type': 'ArchimateDiagramModel',
+                     'documentation': '', 'children': []},
+                ]},
+            ]
+        }
+        with open(self._model_file, 'w') as f:
+            json.dump(model, f)
+
+    def _write_diagram(self, view_id, diagram):
+        with open(os.path.join(self._diagrams_dir, f'{view_id}.json'), 'w') as f:
+            json.dump(diagram, f)
+
+    def test_export_includes_child_elements(self):
+        """Exported XML contains <child> elements from diagram JSON."""
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'd1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'x': 100, 'y': 100, 'width': 120, 'height': 55},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            r = self.client.get('/api/model/export/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('archimateElement="e1"', r.content.decode())
+
+    def test_export_child_has_correct_bounds(self):
+        """Exported <child> has <bounds> matching saved positions."""
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'd1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'x': 150, 'y': 250, 'width': 130, 'height': 60},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('x="150"', xml)
+        self.assertIn('y="250"', xml)
+        self.assertIn('width="130"', xml)
+        self.assertIn('height="60"', xml)
+
+    def test_export_includes_source_connection_with_relation_id(self):
+        """Exported <sourceConnection> carries archimateRelationship from relation_id."""
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'd1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55},
+                {'id': 'd2', 'type': 'element', 'element_id': 'e2',
+                 'element_type': 'BusinessProcess', 'name': 'Process',
+                 'x': 200, 'y': 0, 'width': 120, 'height': 55},
+            ],
+            'edges': [
+                {'id': 'c1', 'source': 'd1', 'target': 'd2',
+                 'type': 'AssignmentRelationship', 'relation_id': 'r1', 'vertices': []},
+            ],
+            'user_edges': [],
+        })
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('sourceConnection', xml)
+        self.assertIn('archimateRelationship="r1"', xml)
+
+    def test_export_view_without_diagram_json_has_no_children(self):
+        """View with no diagram JSON exports as an empty view element."""
+        self._write_model()
+        # No diagram JSON for v1
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('name="Overview"', xml)
+        self.assertNotIn('archimateElement=', xml)
+
+    def test_api_diagram_returns_404_for_unknown_view(self):
+        """GET /api/diagram/<id>/ → 404 when not in model and no diagram file."""
+        model = {'name': 'M', 'type': 'model', 'id': 'm1', 'children': []}
+        with open(self._model_file, 'w') as f:
+            json.dump(model, f)
+        with self._patch():
+            r = self.client.get('/api/diagram/totally-unknown-id/')
+        self.assertEqual(r.status_code, 404)
+
+    def test_upload_diagram_json_has_empty_user_edges(self):
+        """Diagram JSON created on upload has user_edges=[]."""
+        f = SimpleUploadedFile('test.archimate', ARCHIMATE_WITH_DIAGRAM,
+                               content_type='application/octet-stream')
+        with self._patch():
+            self.client.post('/upload/', {'file': f})
+        with open(os.path.join(self._diagrams_dir, 'v1.json')) as fh:
+            diag = json.load(fh)
+        self.assertEqual(diag['user_edges'], [])
+
+
 class ZipArchimateTests(TestCase):
     """Tests for ZIP-wrapped .archimate files (contain images)."""
 
@@ -1187,7 +1415,6 @@ class ZipArchimateTests(TestCase):
                                content_type='application/octet-stream')
         with patch.multiple('app_main.views',
                             _MODEL_FILE=model_file,
-                            _UPLOADS_DIR=os.path.join(tmpdir, 'uploads'),
                             _DIAGRAMS_DIR=os.path.join(tmpdir, 'diagrams'),
                             _GRAFICO_DIR='/nonexistent'):
             r = client.post('/upload/', {'file': f})

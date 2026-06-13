@@ -28,7 +28,6 @@ _DEFAULT_MODEL = {
 }
 
 _MODEL_FILE   = os.path.join(os.path.dirname(__file__), "data", "model.json")
-_UPLOADS_DIR  = os.path.join(os.path.dirname(__file__), "data", "uploads")
 _DIAGRAMS_DIR = os.path.join(os.path.dirname(__file__), "data", "diagrams")
 
 _GRAFICO_DIR = os.path.normpath(
@@ -427,67 +426,31 @@ def _add_source_connection(src_xml, edge, rel_id, XSI):
         bp.set('startY', str(int(v.get('y', 0))))
 
 
-def _copy_children_with_overrides(parent_out, parent_src, pos_override, abs_x, abs_y, built):
-    """Recursively copy <child> elements from source XML, updating <bounds> from pos_override.
-    Tracks copied elements in `built` {id → xml_elem} for later sourceConnection injection."""
-    import copy
-    for child in parent_src:
-        if _local(child.tag) != 'child':
-            continue
-        cid = child.get('id', '')
-        # Original relative bounds
-        ox, oy, ow, oh = 0, 0, 120, 55
-        for sub in child:
-            if _local(sub.tag) == 'bounds':
-                ox, oy = int(sub.get('x', 0)), int(sub.get('y', 0))
-                ow, oh = int(sub.get('width', 120)), int(sub.get('height', 55))
-                break
-        child_abs_x = abs_x + ox
-        child_abs_y = abs_y + oy
-        if cid in pos_override:
-            ov = pos_override[cid]
-            new_ax, new_ay = int(ov['x']), int(ov['y'])
-            rx, ry = new_ax - abs_x, new_ay - abs_y
-            rw, rh = int(ov['width']), int(ov['height'])
-            child_abs_x, child_abs_y = new_ax, new_ay
-        else:
-            rx, ry, rw, rh = ox, oy, ow, oh
-        new_child = ET.Element(child.tag, dict(child.attrib))
-        b = ET.SubElement(new_child, 'bounds')
-        b.set('x', str(rx)); b.set('y', str(ry))
-        b.set('width', str(rw)); b.set('height', str(rh))
-        for sub in child:
-            stag = _local(sub.tag)
-            if stag not in ('bounds', 'child'):
-                new_child.append(copy.deepcopy(sub))
-        if cid:
-            built[cid] = new_child
-        _copy_children_with_overrides(new_child, child, pos_override, child_abs_x, child_abs_y, built)
-        parent_out.append(new_child)
 
-
-def _append_diagram_children(view_xml, view_id, layout, source_root, XSI, user_edges_with_rel):
+def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_rel):
     """Add <child> and <sourceConnection> elements to a view XML element for export."""
-    nodes = layout.get('nodes', [])
-    pos_override = {n['id']: n for n in nodes}
-    has_rich_data = any(n.get('element_id') or n.get('node_type') for n in nodes)
+    built = {}
+    for node in diagram.get('nodes', []):
+        child_xml = _make_child_element(node, XSI)
+        if child_xml is not None:
+            view_xml.append(child_xml)
+            built[node['id']] = child_xml
 
-    built = {}  # id → xml element (for attaching user connections)
-
-    if has_rich_data:
-        for node in nodes:
-            child_xml = _make_child_element(node, XSI)
-            if child_xml is not None:
-                view_xml.append(child_xml)
-                built[node['id']] = child_xml
-    elif source_root is not None:
-        source_view = None
-        for elem in source_root.iter():
-            if elem.get('id') == view_id and _el_type(elem.get(_XSI_TYPE, '')) in _VIEW_TYPES:
-                source_view = elem
-                break
-        if source_view is not None:
-            _copy_children_with_overrides(view_xml, source_view, pos_override, 0, 0, built)
+    for edge in diagram.get('edges', []):
+        src_xml = built.get(edge.get('source', ''))
+        if src_xml is None:
+            continue
+        conn = ET.SubElement(src_xml, 'sourceConnection')
+        conn.set(f'{{{XSI}}}type', 'archimate:Connection')
+        conn.set('id', edge.get('id', ''))
+        conn.set('source', edge.get('source', ''))
+        conn.set('target', edge.get('target', ''))
+        if edge.get('relation_id'):
+            conn.set('archimateRelationship', edge['relation_id'])
+        for v in edge.get('vertices', []):
+            bp = ET.SubElement(conn, 'bendpoint')
+            bp.set('startX', str(int(v.get('x', 0))))
+            bp.set('startY', str(int(v.get('y', 0))))
 
     for edge, rel_id in user_edges_with_rel:
         src_xml = built.get(edge.get('source_cell', ''))
@@ -502,30 +465,20 @@ def _build_archimate_xml(model):
     ET.register_namespace('archimate', NS)
     ET.register_namespace('xsi', XSI)
 
-    # Load original source XML (for diagrams not yet saved from canvas)
-    source_root = None
-    source_path = model.get('_source', '')
-    if source_path and os.path.isfile(source_path):
-        try:
-            source_root = ET.parse(source_path).getroot()
-        except ET.ParseError:
-            pass
-
-    # Load all saved layouts and build node_id → element_id lookup
-    layouts = _export_collect(model)
+    # Load all pre-parsed diagram files
+    diagrams = _export_collect(model)
     node_to_elem = {}
-    for layout in layouts.values():
-        for n in layout.get('nodes', []):
+    for diag in diagrams.values():
+        for n in diag.get('nodes', []):
             if n.get('element_id'):
                 node_to_elem[n['id']] = n['element_id']
 
     # Pre-generate relation IDs for user-drawn edges
-    # user_edges_by_view: view_id → [(edge_dict, rel_id)]
     user_edges_by_view = {}
-    new_relations = []  # (rel_id, rel_type, src_elem_id, tgt_elem_id)
-    for vid, layout in layouts.items():
+    new_relations = []
+    for vid, diag in diagrams.items():
         pairs = []
-        for edge in layout.get('user_edges', []):
+        for edge in diag.get('user_edges', []):
             rel_id = str(_uuid.uuid4())
             pairs.append((edge, rel_id))
             src_eid = node_to_elem.get(edge.get('source_cell', ''), '')
@@ -572,8 +525,8 @@ def _build_archimate_xml(model):
                 vid = node['id']
                 _append_diagram_children(
                     elem, vid,
-                    layouts.get(vid, {}),
-                    source_root, XSI,
+                    diagrams.get(vid, {}),
+                    XSI,
                     user_edges_by_view.get(vid, []),
                 )
 
@@ -809,11 +762,12 @@ def _parse_native_diagram(view_elem, elements_index):
                 rel_id = sub.get('archimateRelationship', '')
                 rel_info = elements_index.get(rel_id, {})
                 edges.append({
-                    'id':     sub.get('id', ''),
-                    'type':   rel_info.get('element_type', ''),
-                    'source': sub.get('source', oid),
-                    'target': sub.get('target', ''),
-                    '_raw_bps': _collect_bps(sub),
+                    'id':          sub.get('id', ''),
+                    'type':        rel_info.get('element_type', ''),
+                    'source':      sub.get('source', oid),
+                    'target':      sub.get('target', ''),
+                    'relation_id': rel_id,
+                    '_raw_bps':    _collect_bps(sub),
                 })
 
         if xsi_type in ('DiagramObject', 'DiagramModelArchimateObject'):
@@ -912,74 +866,46 @@ def _parse_native_diagram(view_elem, elements_index):
     }
 
 
-def _find_model_view(view_id):
-    """Return (root, view_elem) from the uploaded .archimate file, or (None, None).
-
-    The path to the uploaded file is stored in model.json under '_source'.
-    """
-    model = _load_model()
-    source = model.get('_source', '')
-    if not source or not os.path.isfile(source):
-        return None, None
-    try:
-        root = ET.parse(source).getroot()
-    except ET.ParseError:
-        return None, None
-    for elem in root.iter():
-        if elem.get('id') == view_id:
-            et = _el_type(elem.get(_XSI_TYPE, ''))
-            if et in _VIEW_TYPES:
-                return root, elem
-    return None, None
+def _parse_and_save_all_diagrams(xml_root, elements_index):
+    """Parse every diagram view in a native .archimate root; save each to data/diagrams/<id>.json."""
+    os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
+    for elem in xml_root.iter():
+        et = _el_type(elem.get(_XSI_TYPE, ''))
+        if et in _VIEW_TYPES:
+            data = _parse_native_diagram(elem, elements_index)
+            data['user_edges'] = []
+            with open(_layout_path(elem.get('id', '')), 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def _layout_path(view_id):
     return os.path.join(_DIAGRAMS_DIR, f"{view_id}.json")
 
 
-def _apply_saved_layout(data, view_id):
-    """Merge saved node positions and user edges into parsed diagram data."""
-    path = _layout_path(view_id)
-    if not os.path.isfile(path):
-        return data
-    with open(path, encoding='utf-8') as f:
-        layout = json.load(f)
-    # Override node positions with saved values
-    pos = {n['id']: n for n in layout.get('nodes', [])}
-    for node in data['nodes']:
-        if node['id'] in pos:
-            s = pos[node['id']]
-            node.update({k: s[k] for k in ('x', 'y', 'width', 'height') if k in s})
-    # Append user-created edges (not from Archi XML)
-    existing_ids = {e['id'] for e in data['edges']}
-    for edge in layout.get('user_edges', []):
-        if edge.get('id') not in existing_ids:
-            data['edges'].append(edge)
-    return data
-
-
 def api_diagram(request, view_id):
+    # 1. Pre-parsed diagram file (native .archimate uploaded, or previously saved canvas)
+    diag_path = _layout_path(view_id)
+    if os.path.isfile(diag_path):
+        try:
+            with open(diag_path, encoding='utf-8') as f:
+                return JsonResponse(json.load(f))
+        except (json.JSONDecodeError, OSError):
+            pass
+
     model = _load_model()
     elements_index = _build_elements_index(model)
 
-    # 1. Try Grafico multi-file diagram
+    # 2. Grafico multi-file diagram
     diagram_file = _find_diagram_file(view_id)
     if diagram_file:
         try:
             data = _parse_diagram_file(diagram_file, elements_index)
-            data = _apply_saved_layout(data, view_id)
+            data.setdefault('user_edges', [])
             return JsonResponse(data)
         except ET.ParseError as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-    # 2. Try model.archimate diagram
-    _, view_elem = _find_model_view(view_id)
-    if view_elem is not None:
-        data = _parse_native_diagram(view_elem, elements_index)
-        data = _apply_saved_layout(data, view_id)
-        return JsonResponse(data)
-
-    # 3. Fallback: return empty diagram (blank canvas for user-created views)
+    # 3. Empty canvas for user-created views
     def find_node(node, tid):
         if node.get('id') == tid:
             return node
@@ -993,10 +919,9 @@ def api_diagram(request, view_id):
     if node is None:
         return JsonResponse({'error': 'Not found'}, status=404)
     return JsonResponse({
-        'id': view_id,
-        'name': node.get('name', ''),
+        'id': view_id, 'name': node.get('name', ''),
         'documentation': node.get('documentation', ''),
-        'nodes': [], 'edges': [],
+        'nodes': [], 'edges': [], 'user_edges': [],
     })
 
 
@@ -1004,12 +929,56 @@ def api_diagram_save(request, view_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
     try:
-        layout = json.loads(request.body)
+        canvas = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
     os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
-    with open(_layout_path(view_id), 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
+    diag_path = _layout_path(view_id)
+    pos_map = {n['id']: n for n in canvas.get('nodes', [])}
+
+    if os.path.isfile(diag_path):
+        try:
+            with open(diag_path, encoding='utf-8') as f:
+                diagram = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            diagram = {'id': view_id, 'name': '', 'documentation': '', 'nodes': [], 'edges': [], 'user_edges': []}
+        # Update positions for nodes already in diagram
+        for node in diagram.get('nodes', []):
+            if node['id'] in pos_map:
+                ov = pos_map[node['id']]
+                for k in ('x', 'y', 'width', 'height'):
+                    node[k] = ov[k]
+        # Append new nodes (user-dropped elements not yet in diagram)
+        existing_ids = {n['id'] for n in diagram['nodes']}
+        for n in canvas.get('nodes', []):
+            if n['id'] not in existing_ids:
+                diagram['nodes'].append({
+                    'id': n['id'], 'type': n.get('node_type', 'element'),
+                    'element_id': n.get('element_id', ''),
+                    'element_type': n.get('element_type', ''),
+                    'name': n.get('name', ''),
+                    'x': n['x'], 'y': n['y'],
+                    'width': n['width'], 'height': n['height'],
+                })
+        diagram['user_edges'] = canvas.get('user_edges', [])
+    else:
+        diagram = {
+            'id': view_id, 'name': '', 'documentation': '',
+            'nodes': [{
+                'id': n['id'], 'type': n.get('node_type', 'element'),
+                'element_id': n.get('element_id', ''),
+                'element_type': n.get('element_type', ''),
+                'name': n.get('name', ''),
+                'x': n['x'], 'y': n['y'],
+                'width': n['width'], 'height': n['height'],
+            } for n in canvas.get('nodes', [])],
+            'edges': [],
+            'user_edges': canvas.get('user_edges', []),
+        }
+
+    with open(diag_path, 'w', encoding='utf-8') as f:
+        json.dump(diagram, f, ensure_ascii=False, indent=2)
     return JsonResponse({'ok': True})
 
 
@@ -1040,22 +1009,17 @@ def upload_model(request):
     except ET.ParseError as e:
         return JsonResponse({"error": f"XML parse error: {e}"}, status=400)
 
-    # Save original file to uploads/ and record its path in the model
+    model.pop("_source", None)
+
     try:
-        root_tag = ET.fromstring(raw).tag
-        is_native = "opengroup.org" not in root_tag
+        xml_root = ET.fromstring(raw)
+        is_native = "opengroup.org" not in xml_root.tag
     except ET.ParseError:
         is_native = False
 
     if is_native:
-        os.makedirs(_UPLOADS_DIR, exist_ok=True)
-        filename = os.path.basename(f.name) or "model.archimate"
-        upload_path = os.path.join(_UPLOADS_DIR, filename)
-        with open(upload_path, "wb") as out:
-            out.write(raw)
-        model["_source"] = upload_path
-    else:
-        model.pop("_source", None)
+        elements_index = _build_elements_index(model)
+        _parse_and_save_all_diagrams(xml_root, elements_index)
 
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
     with open(_MODEL_FILE, "w", encoding="utf-8") as out:
