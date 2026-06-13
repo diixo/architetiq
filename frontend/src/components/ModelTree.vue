@@ -4,7 +4,7 @@
     <!-- Header: toggles between title and search input -->
     <div class="panel-heading d-flex align-items-center gap-1 pe-1">
       <template v-if="!searching">
-        <b class="flex-grow-1" style="font-size:0.875rem;">Model Tree</b>
+        <span class="flex-grow-1" style="font-size:0.875rem;">Model Tree</span>
         <button class="btn btn-link p-0 text-muted tree-search-btn" title="Filter" @click="startSearch">
           <i class="bi bi-search" style="font-size:0.7rem;"></i>
         </button>

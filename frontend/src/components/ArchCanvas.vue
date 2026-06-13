@@ -1,7 +1,7 @@
 <template>
   <div class="panel root-panel h-100 d-flex flex-column">
     <div class="panel-heading d-flex align-items-center gap-2">
-      <b>{{ title }}</b>
+      <span>{{ title }}</span>
       <span v-if="loading" class="text-muted ms-1" style="font-size:0.75rem;">Loading…</span>
       <div class="ms-auto d-flex gap-1 align-items-center" v-if="diagramData">
         <!-- Save indicator + button -->
@@ -66,9 +66,12 @@ function csrfToken() {
   return m ? m[1] : ''
 }
 
-const title = computed(() =>
-  diagramData.value?.name || store.model?.name || 'Canvas'
-)
+const title = computed(() => {
+  const model = store.model?.name
+  const view  = diagramData.value?.name
+  if (model && view) return `${model}: ${view}`
+  return view || model || 'Canvas'
+})
 
 // ── ArchiMate marker definitions (from Archi Java source) ────────────────────
 // tagName:'path' required in X6 v3 for custom SVG markers
