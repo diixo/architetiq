@@ -8,6 +8,12 @@ py ui/manage.py runserver
 ```
 
 
+### UI based on Django:
+```bash
+http://127.0.0.1:8000/django
+```
+
+
 ## Create repository structure
 
 ```bash
