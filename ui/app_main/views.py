@@ -935,47 +935,45 @@ def api_diagram_save(request, view_id):
 
     os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
     diag_path = _layout_path(view_id)
-    pos_map = {n['id']: n for n in canvas.get('nodes', [])}
 
+    # Load existing diagram to preserve name, documentation, edges and per-node archimate fields
     if os.path.isfile(diag_path):
         try:
             with open(diag_path, encoding='utf-8') as f:
                 diagram = json.load(f)
         except (json.JSONDecodeError, OSError):
             diagram = {'id': view_id, 'name': '', 'documentation': '', 'nodes': [], 'edges': [], 'user_edges': []}
-        # Update positions for nodes already in diagram
-        for node in diagram.get('nodes', []):
-            if node['id'] in pos_map:
-                ov = pos_map[node['id']]
-                for k in ('x', 'y', 'width', 'height'):
-                    node[k] = ov[k]
-        # Append new nodes (user-dropped elements not yet in diagram)
-        existing_ids = {n['id'] for n in diagram['nodes']}
-        for n in canvas.get('nodes', []):
-            if n['id'] not in existing_ids:
-                diagram['nodes'].append({
-                    'id': n['id'], 'type': n.get('node_type', 'element'),
-                    'element_id': n.get('element_id', ''),
-                    'element_type': n.get('element_type', ''),
-                    'name': n.get('name', ''),
-                    'x': n['x'], 'y': n['y'],
-                    'width': n['width'], 'height': n['height'],
-                })
-        diagram['user_edges'] = canvas.get('user_edges', [])
     else:
-        diagram = {
-            'id': view_id, 'name': '', 'documentation': '',
-            'nodes': [{
-                'id': n['id'], 'type': n.get('node_type', 'element'),
-                'element_id': n.get('element_id', ''),
-                'element_type': n.get('element_type', ''),
-                'name': n.get('name', ''),
-                'x': n['x'], 'y': n['y'],
-                'width': n['width'], 'height': n['height'],
-            } for n in canvas.get('nodes', [])],
-            'edges': [],
-            'user_edges': canvas.get('user_edges', []),
+        diagram = {'id': view_id, 'name': '', 'documentation': '', 'nodes': [], 'edges': [], 'user_edges': []}
+
+    # Full replace: canvas is the single source of truth for which nodes exist.
+    # Merge archimate-specific fields (element_id, element_type, parent_id) from existing data.
+    existing_map = {n['id']: n for n in diagram.get('nodes', [])}
+    canvas_ids = {n['id'] for n in canvas.get('nodes', [])}
+    new_nodes = []
+    for n in canvas.get('nodes', []):
+        base = existing_map.get(n['id'], {})
+        node = {
+            'id':           n['id'],
+            'type':         base.get('type') or n.get('node_type', 'element'),
+            'element_id':   base.get('element_id') or n.get('element_id', ''),
+            'element_type': base.get('element_type') or n.get('element_type', ''),
+            'name':         base.get('name') or n.get('name', ''),
+            'x': n['x'], 'y': n['y'], 'width': n['width'], 'height': n['height'],
         }
+        if 'parent_id' in base:
+            node['parent_id'] = base['parent_id']
+        new_nodes.append(node)
+
+    # Drop edges whose source or target was deleted
+    kept_edges = [
+        e for e in diagram.get('edges', [])
+        if e.get('source') in canvas_ids and e.get('target') in canvas_ids
+    ]
+
+    diagram['nodes']      = new_nodes
+    diagram['edges']      = kept_edges
+    diagram['user_edges'] = canvas.get('user_edges', [])
 
     with open(diag_path, 'w', encoding='utf-8') as f:
         json.dump(diagram, f, ensure_ascii=False, indent=2)

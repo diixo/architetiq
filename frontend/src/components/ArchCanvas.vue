@@ -58,6 +58,7 @@ const isDirty          = ref(false)
 const currentViewId    = ref(null)
 let graph = null
 let resizeObserver = null
+let selectedCanvasCell = null
 
 // CSRF token helper
 function csrfToken() {
@@ -231,6 +232,7 @@ function initGraph() {
 
   // Selection / PropertiesPanel
   graph.on('node:click', ({ node }) => {
+    selectedCanvasCell = node
     const d = node.getData()
     if (!d) return
     if (d.element_id) {
@@ -241,10 +243,13 @@ function initGraph() {
       store.selectNode(d)
     }
   })
+  graph.on('edge:click',  ({ edge })  => { selectedCanvasCell = edge })
+  graph.on('blank:click', ()          => { selectedCanvasCell = null })
 
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true })
   graph.on('node:resized',       () => { isDirty.value = true })
+  graph.on('node:removed',       () => { isDirty.value = true })
   graph.on('edge:connected',     ({ edge }) => applyConnTypeToEdge(edge))
   graph.on('edge:added',         ({ edge }) => {
     if (!edge.getData()?.isLoaded) isDirty.value = true
@@ -578,11 +583,24 @@ function clearDiagram() {
   graph?.clearCells()
 }
 
+function onKeyDown(e) {
+  if (e.key !== 'Delete' && e.key !== 'Backspace') return
+  const tag = e.target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return
+  if (!graph || !selectedCanvasCell) return
+  graph.removeCell(selectedCanvasCell)
+  selectedCanvasCell = null
+}
+
 defineExpose({ clearDiagram })
 
-onMounted(initGraph)
+onMounted(() => {
+  initGraph()
+  document.addEventListener('keydown', onKeyDown)
+})
 onUnmounted(() => {
   resizeObserver?.disconnect()
   graph?.dispose()
+  document.removeEventListener('keydown', onKeyDown)
 })
 </script>

@@ -1065,13 +1065,16 @@ class DiagramSaveTests(TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self._diagrams_dir, 'new-view.json')))
 
     def test_save_updates_existing_node_positions(self):
-        """Save merges positions into existing diagram JSON without destroying edges."""
+        """Save updates positions; edges whose endpoints are still present are kept."""
         initial = {
             'id': 'v1', 'name': 'V', 'documentation': '',
             'nodes': [
                 {'id': 'n1', 'type': 'element', 'element_id': 'e1',
                  'element_type': 'BusinessActor', 'name': 'Actor',
                  'x': 0, 'y': 0, 'width': 120, 'height': 55},
+                {'id': 'n2', 'type': 'element', 'element_id': 'e2',
+                 'element_type': 'BusinessProcess', 'name': 'Process',
+                 'x': 200, 'y': 0, 'width': 120, 'height': 55},
             ],
             'edges': [
                 {'id': 'c1', 'source': 'n1', 'target': 'n2',
@@ -1082,9 +1085,10 @@ class DiagramSaveTests(TestCase):
         with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
             json.dump(initial, f)
 
-        payload = {'view_id': 'v1',
-                   'nodes': [{'id': 'n1', 'x': 100, 'y': 200, 'width': 150, 'height': 70}],
-                   'user_edges': []}
+        payload = {'view_id': 'v1', 'nodes': [
+            {'id': 'n1', 'x': 100, 'y': 200, 'width': 150, 'height': 70},
+            {'id': 'n2', 'x': 300, 'y': 200, 'width': 150, 'height': 70},
+        ], 'user_edges': []}
         with self._patch():
             self.client.post('/api/diagram/v1/save/',
                              json.dumps(payload), content_type='application/json')
@@ -1093,16 +1097,49 @@ class DiagramSaveTests(TestCase):
         n1 = next(n for n in saved['nodes'] if n['id'] == 'n1')
         self.assertEqual(n1['x'], 100)
         self.assertEqual(n1['y'], 200)
-        # edge must still be there with relation_id intact
+        # edge preserved — both endpoints still present
         self.assertEqual(len(saved['edges']), 1)
         self.assertEqual(saved['edges'][0]['relation_id'], 'r1')
 
-    def test_save_appends_new_nodes(self):
-        """New nodes (not in existing diagram) get appended."""
+    def test_save_drops_edge_when_node_deleted(self):
+        """Edge whose source or target is absent from canvas is dropped on save."""
         initial = {
             'id': 'v1', 'name': 'V', 'documentation': '',
             'nodes': [
-                {'id': 'existing', 'type': 'element', 'element_id': 'e1',
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'A',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55},
+                {'id': 'n2', 'type': 'element', 'element_id': 'e2',
+                 'element_type': 'BusinessProcess', 'name': 'B',
+                 'x': 200, 'y': 0, 'width': 120, 'height': 55},
+            ],
+            'edges': [
+                {'id': 'c1', 'source': 'n1', 'target': 'n2',
+                 'type': 'AssignmentRelationship', 'relation_id': 'r1', 'vertices': []},
+            ],
+            'user_edges': [],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        # Canvas only has n1 — n2 was deleted
+        payload = {'view_id': 'v1',
+                   'nodes': [{'id': 'n1', 'x': 0, 'y': 0, 'width': 120, 'height': 55}],
+                   'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved = self._diag('v1')
+        self.assertEqual(len(saved['nodes']), 1)
+        self.assertEqual(len(saved['edges']), 0)
+
+    def test_save_canvas_is_source_of_truth_for_nodes(self):
+        """Nodes absent from canvas payload are removed from diagram JSON."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
                  'element_type': 'BusinessActor', 'name': 'Old',
                  'x': 0, 'y': 0, 'width': 120, 'height': 55},
             ],
@@ -1111,7 +1148,9 @@ class DiagramSaveTests(TestCase):
         with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
             json.dump(initial, f)
 
+        # Canvas has n1 (existing) + new-node (added from palette)
         payload = {'view_id': 'v1', 'nodes': [
+            {'id': 'n1', 'x': 0, 'y': 0, 'width': 120, 'height': 55},
             {'id': 'new-node', 'x': 50, 'y': 60, 'width': 120, 'height': 55,
              'node_type': 'element', 'element_id': 'e2',
              'element_type': 'BusinessProcess', 'name': 'New'},
@@ -1121,8 +1160,38 @@ class DiagramSaveTests(TestCase):
                              json.dumps(payload), content_type='application/json')
 
         ids = {n['id'] for n in self._diag('v1')['nodes']}
-        self.assertIn('existing', ids)
+        self.assertIn('n1', ids)
         self.assertIn('new-node', ids)
+
+    def test_save_preserves_archimate_fields_from_existing_diagram(self):
+        """element_id / element_type / parent_id are kept from diagram JSON
+        even when canvas payload omits them (loaded nodes don't resend metadata)."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'parent_id': 'grp1',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55},
+            ],
+            'edges': [], 'user_edges': [],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        # Canvas sends only geometry — no element_id / element_type / parent_id
+        payload = {'view_id': 'v1',
+                   'nodes': [{'id': 'n1', 'x': 50, 'y': 50, 'width': 120, 'height': 55}],
+                   'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved_node = self._diag('v1')['nodes'][0]
+        self.assertEqual(saved_node['element_id'],   'e1')
+        self.assertEqual(saved_node['element_type'], 'BusinessActor')
+        self.assertEqual(saved_node['name'],         'Actor')
+        self.assertEqual(saved_node.get('parent_id'), 'grp1')
 
     def test_save_replaces_user_edges(self):
         """user_edges is replaced entirely on each save."""
