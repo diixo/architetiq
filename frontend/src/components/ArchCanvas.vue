@@ -218,7 +218,7 @@ function initGraph() {
     mousewheel: { enabled: true, modifiers: 'ctrl', zoomAtMousePosition: true },
     panning:    { enabled: true, modifiers: 'alt' },
     // ── Enable editing ────────────────────────────────────────────────────────
-    interacting: { nodeMovable: true, edgeLabelMovable: false },
+    interacting: { nodeMovable: true, edgeLabelMovable: false, vertexAddable: false },
     connecting: {
       snap: { radius: 24 },
       allowBlank: false,
@@ -232,6 +232,7 @@ function initGraph() {
 
   // Selection / PropertiesPanel
   graph.on('node:click', ({ node }) => {
+    deselectEdge()
     selectedCanvasCell = node
     const d = node.getData()
     if (!d) return
@@ -243,8 +244,33 @@ function initGraph() {
       store.selectNode(d)
     }
   })
-  graph.on('edge:click',  ({ edge })  => { selectedCanvasCell = edge })
-  graph.on('blank:click', ()          => { selectedCanvasCell = null })
+  function deselectEdge() {
+    if (!selectedCanvasCell?.isEdge?.()) return
+    const s = edgeStyle(selectedCanvasCell.getData()?.type)
+    selectedCanvasCell.attr('line/stroke', s.stroke)
+    selectedCanvasCell.attr('line/strokeWidth', s.strokeWidth)
+    selectedCanvasCell.removeTools()
+  }
+  const DOT_MARKUP = [{ tagName: 'circle', selector: 'button', attrs: { r: 3, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5, cursor: 'default' } }]
+
+  function selectEdge(edge) {
+    if (selectedCanvasCell === edge) return
+    deselectEdge()
+    selectedCanvasCell = edge
+    edge.attr('line/stroke', '#0d6efd')
+    edge.attr('line/strokeWidth', Math.max(edge.attr('line/strokeWidth') || 1, 1.5))
+    edge.addTools([
+      { name: 'button', args: { markup: DOT_MARKUP, distance: 0 } },
+      { name: 'button', args: { markup: DOT_MARKUP, distance: '100%' } },
+      { name: 'vertices', args: { snapRadius: 10, attrs: { circle: { r: 2, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5 } } } },
+      { name: 'segments', args: { snapRadius: 10 } },
+    ])
+  }
+  graph.on('edge:click', ({ edge }) => selectEdge(edge))
+  graph.on('blank:click', () => {
+    deselectEdge()
+    selectedCanvasCell = null
+  })
 
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true })
@@ -431,6 +457,7 @@ function renderDiagram() {
             sourceMarker: s.src,
             targetMarker: s.tgt,
           },
+          wrap: { strokeWidth: 10 },
         },
       })
     } catch (_) { /* skip invalid */ }
@@ -554,13 +581,13 @@ function applyConnTypeToEdge(edge) {
   const relType = store.activeConnType
   edge.setData({ type: relType })
   const s = edgeStyle(relType)
-  edge.setAttrs({
-    line: {
-      stroke: s.stroke, strokeWidth: s.strokeWidth,
-      ...(s.dash ? { strokeDasharray: s.dash } : {}),
-      sourceMarker: s.src, targetMarker: s.tgt,
-    },
-  })
+  // Use attr() path setters — setAttrs() deep-merges and won't clear X6 default blue markers
+  edge.attr('line/stroke', s.stroke)
+  edge.attr('line/strokeWidth', s.strokeWidth)
+  edge.attr('line/strokeDasharray', s.dash || null)
+  edge.attr('line/sourceMarker', s.src ?? false)
+  edge.attr('line/targetMarker', s.tgt ?? false)
+  edge.attr('wrap/strokeWidth', 10)
   isDirty.value = true
 }
 
