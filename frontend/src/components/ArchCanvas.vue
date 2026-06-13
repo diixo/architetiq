@@ -223,11 +223,12 @@ function initGraph() {
     // ── Enable editing ────────────────────────────────────────────────────────
     interacting: { nodeMovable: true, edgeLabelMovable: false, vertexAddable: false, arrowheadMovable: true },
     connecting: {
-      snap: { radius: 24 },
-      allowBlank: false,
-      allowLoop:  false,
-      highlight:  true,
-      connector:  { name: 'normal' },
+      snap:             { radius: 50 },
+      allowBlank:       false,
+      allowLoop:        false,
+      highlight:        true,
+      connector:        { name: 'normal' },
+      connectionPoint:  'boundary',
       validateConnection: ({ sourceCell, targetCell }) =>
         sourceCell !== targetCell,
     },
