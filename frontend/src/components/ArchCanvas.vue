@@ -221,7 +221,7 @@ function initGraph() {
     mousewheel: { enabled: true, modifiers: 'ctrl', zoomAtMousePosition: true },
     panning:    { enabled: true, modifiers: 'alt' },
     // ── Enable editing ────────────────────────────────────────────────────────
-    interacting: { nodeMovable: true, edgeLabelMovable: false, vertexAddable: false },
+    interacting: { nodeMovable: true, edgeLabelMovable: false, vertexAddable: false, arrowheadMovable: true },
     connecting: {
       snap: { radius: 24 },
       allowBlank: false,
@@ -254,7 +254,11 @@ function initGraph() {
     selectedCanvasCell.attr('line/strokeWidth', s.strokeWidth)
     selectedCanvasCell.removeTools()
   }
-  const DOT_MARKUP = [{ tagName: 'circle', selector: 'button', attrs: { r: 3, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5, cursor: 'default' } }]
+  // Circle path r=3 — overrides the default triangle in source/target-arrowhead tools
+  const ENDPOINT_HANDLE_ATTRS = {
+    d: 'M -3 0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0',
+    fill: '#0d6efd', stroke: '#fff', 'stroke-width': 1.5, cursor: 'move',
+  }
 
   function selectEdge(edge) {
     if (selectedCanvasCell === edge) return
@@ -263,8 +267,8 @@ function initGraph() {
     edge.attr('line/stroke', '#0d6efd')
     edge.attr('line/strokeWidth', Math.max(edge.attr('line/strokeWidth') || 1, 1.5))
     edge.addTools([
-      { name: 'button', args: { markup: DOT_MARKUP, distance: 0 } },
-      { name: 'button', args: { markup: DOT_MARKUP, distance: '100%' } },
+      { name: 'source-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
+      { name: 'target-arrowhead', args: { attrs: ENDPOINT_HANDLE_ATTRS } },
       { name: 'vertices', args: { snapRadius: 10, attrs: { circle: { r: 2, fill: '#0d6efd', stroke: '#fff', strokeWidth: 1.5 } } } },
       { name: 'segments', args: { snapRadius: 10 } },
     ])
