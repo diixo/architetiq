@@ -1,86 +1,122 @@
 {
-  "name": "*New Model",
+  "name": "TestModel",
   "type": "model",
+  "id": "id-c625bdc49f404714888443c3a9c9c5b9",
   "children": [
     {
       "name": "Strategy",
       "type": "node",
+      "id": "id-3864d922c5e04ed68bffbb4e00de9183",
       "children": [],
-      "folder_type": "strategy",
-      "id": "00000000-0000-0000-0001-000000000001"
+      "folder_type": "strategy"
     },
     {
       "name": "Business",
       "type": "node",
-      "children": [],
-      "folder_type": "business",
-      "id": "00000000-0000-0000-0001-000000000002"
+      "id": "id-24a139b588924cef8e97d34cc8d49ea0",
+      "children": [
+        {
+          "id": "b72e98bb-eff0-4c34-9d31-3f51aff498ff",
+          "name": "Business Actor",
+          "type": "element",
+          "element_type": "BusinessActor",
+          "documentation": "",
+          "children": []
+        },
+        {
+          "id": "54a2d3cb-35eb-443e-83de-87c4de4fd024",
+          "name": "Business Actor",
+          "type": "element",
+          "element_type": "BusinessActor",
+          "documentation": "",
+          "children": []
+        },
+        {
+          "id": "208a1774-82e8-4c7c-9a07-e2fd2c27f6ff",
+          "name": "Business Actor",
+          "type": "element",
+          "element_type": "BusinessActor",
+          "documentation": "",
+          "children": []
+        }
+      ],
+      "folder_type": "business"
     },
     {
       "name": "Application",
       "type": "node",
-      "children": [],
-      "folder_type": "application",
-      "id": "00000000-0000-0000-0001-000000000003"
+      "id": "id-efc8dda6a15b4e73970b831728f9d93e",
+      "children": [
+        {
+          "id": "998cfee5-5e56-4b4c-8ec1-d58e717ee2e9",
+          "name": "Data Object",
+          "type": "element",
+          "element_type": "DataObject",
+          "documentation": "",
+          "children": []
+        }
+      ],
+      "folder_type": "application"
     },
     {
-      "name": "Technology And Physical",
+      "name": "Technology & Physical",
       "type": "node",
+      "id": "id-2cac1338a6a045f9997f77bb8990ba22",
       "children": [],
-      "folder_type": "technology",
-      "id": "00000000-0000-0000-0001-000000000004"
+      "folder_type": "technology"
     },
     {
       "name": "Motivation",
       "type": "node",
+      "id": "id-2aa3457a186d4565ad767e5f1b0b67be",
       "children": [],
-      "folder_type": "motivation",
-      "id": "00000000-0000-0000-0001-000000000005"
+      "folder_type": "motivation"
     },
     {
-      "name": "Implementation and Migration",
+      "name": "Implementation & Migration",
       "type": "node",
+      "id": "id-3eab1803d3174a97a95a254cabe46567",
       "children": [],
-      "folder_type": "implementation_migration",
-      "id": "00000000-0000-0000-0001-000000000006"
+      "folder_type": "implementation_migration"
     },
     {
       "name": "Other",
       "type": "node",
-      "children": [],
-      "folder_type": "other",
-      "id": "00000000-0000-0000-0001-000000000007"
+      "id": "id-6c8bd4a867d946abbb493ed65e753523",
+      "children": [
+        {
+          "name": "Grouping",
+          "type": "element",
+          "element_type": "Grouping",
+          "id": "id-77b5d62f8a154c2b958043441d47547a",
+          "documentation": "",
+          "children": []
+        }
+      ],
+      "folder_type": "other"
     },
     {
       "name": "Relations",
       "type": "node",
+      "id": "id-a6562b1f0c984c93a0139f1972e3319c",
       "children": [],
-      "folder_type": "relations",
-      "id": "00000000-0000-0000-0001-000000000008"
+      "folder_type": "relations"
     },
     {
       "name": "Views",
       "type": "node",
-      "folder_type": "diagrams",
+      "id": "id-c809c59a772b44cdaf1b4ed7408bf521",
       "children": [
         {
           "name": "Default View",
           "type": "view",
           "element_type": "ArchimateDiagramModel",
-          "id": "00000000-0000-0000-0000-000000000001",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "a95e7595-2dc4-4027-a8c0-5011445d1754",
-          "name": "New Sketch",
-          "type": "view",
-          "element_type": "SketchModel",
+          "id": "id-94d17ed16bdf42bd8b890db3db0a9f65",
           "documentation": "",
           "children": []
         }
       ],
-      "id": "00000000-0000-0000-0001-000000000009"
+      "folder_type": "diagrams"
     }
   ]
 }
