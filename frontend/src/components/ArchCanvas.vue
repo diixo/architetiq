@@ -437,10 +437,11 @@ function renderDiagram() {
 // ── Load ──────────────────────────────────────────────────────────────────────
 function extractLayout() {
   if (!graph || !currentViewId.value) return null
-  const nodes = graph.getNodes().map(n => ({
-    id: n.id, x: n.getX(), y: n.getY(),
-    width: n.getWidth(), height: n.getHeight(),
-  }))
+  const nodes = graph.getNodes().map(n => {
+    const { x, y } = n.getPosition()
+    const { width, height } = n.getSize()
+    return { id: n.id, x, y, width, height }
+  })
   const userEdges = graph.getEdges()
     .filter(e => !e.getData()?.isLoaded)
     .map(e => {
@@ -460,12 +461,20 @@ function extractLayout() {
 async function saveLayout() {
   const layout = extractLayout()
   if (!layout) return
-  const r = await fetch(`/api/diagram/${layout.view_id}/save/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
-    body: JSON.stringify(layout),
-  })
-  if ((await r.json()).ok) isDirty.value = false
+  try {
+    const r = await fetch(`/api/diagram/${layout.view_id}/save/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+      body: JSON.stringify(layout),
+    })
+    if (!r.ok) {
+      console.error('Save layout HTTP error:', r.status, await r.text())
+      return
+    }
+    if ((await r.json()).ok) isDirty.value = false
+  } catch (e) {
+    console.error('Save layout failed:', e)
+  }
 }
 
 async function loadDiagram(viewId) {
