@@ -16,7 +16,7 @@
       "id": "id-24a139b588924cef8e97d34cc8d49ea0",
       "children": [
         {
-          "id": "b72e98bb-eff0-4c34-9d31-3f51aff498ff",
+          "id": "2dba5c83-cc7d-4e75-9379-d62504515153",
           "name": "Business Actor",
           "type": "element",
           "element_type": "BusinessActor",
@@ -24,7 +24,7 @@
           "children": []
         },
         {
-          "id": "54a2d3cb-35eb-443e-83de-87c4de4fd024",
+          "id": "a324045b-6649-48d8-a54f-c45151166255",
           "name": "Business Actor",
           "type": "element",
           "element_type": "BusinessActor",
@@ -32,7 +32,7 @@
           "children": []
         },
         {
-          "id": "208a1774-82e8-4c7c-9a07-e2fd2c27f6ff",
+          "id": "0edcbb1a-d5fd-4844-b9db-596e8c05114e",
           "name": "Business Actor",
           "type": "element",
           "element_type": "BusinessActor",

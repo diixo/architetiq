@@ -1,0 +1,57 @@
+{
+  "id": "id-94d17ed16bdf42bd8b890db3db0a9f65",
+  "name": "",
+  "documentation": "",
+  "nodes": [
+    {
+      "id": "f3a5d892-7be4-425d-8055-a86d55c42f61",
+      "type": "element",
+      "element_id": "f3a5d892-7be4-425d-8055-a86d55c42f61",
+      "element_type": "BusinessActor",
+      "name": "Business Actor",
+      "x": 180,
+      "y": -270,
+      "width": 120,
+      "height": 55
+    },
+    {
+      "id": "0d4f989d-0a68-4255-b5fd-6198f0f3a80e",
+      "type": "element",
+      "element_id": "0d4f989d-0a68-4255-b5fd-6198f0f3a80e",
+      "element_type": "BusinessActor",
+      "name": "Business Actor",
+      "x": -220,
+      "y": -170,
+      "width": 120,
+      "height": 55
+    },
+    {
+      "id": "fc4f9ea6-255b-492b-8649-3461758c7060",
+      "type": "element",
+      "element_id": "fc4f9ea6-255b-492b-8649-3461758c7060",
+      "element_type": "BusinessActor",
+      "name": "Business Actor",
+      "x": 30,
+      "y": 0,
+      "width": 120,
+      "height": 55
+    }
+  ],
+  "edges": [],
+  "user_edges": [
+    {
+      "id": "3022fd4a-685b-4b13-9d76-83911babe128",
+      "source_cell": "0d4f989d-0a68-4255-b5fd-6198f0f3a80e",
+      "target_cell": "f3a5d892-7be4-425d-8055-a86d55c42f61",
+      "type": "CompositionRelationship",
+      "vertices": []
+    },
+    {
+      "id": "daebfcad-c0a5-4ff5-b97d-62fc780b56e5",
+      "source_cell": "fc4f9ea6-255b-492b-8649-3461758c7060",
+      "target_cell": "f3a5d892-7be4-425d-8055-a86d55c42f61",
+      "type": "CompositionRelationship",
+      "vertices": []
+    }
+  ]
+}
