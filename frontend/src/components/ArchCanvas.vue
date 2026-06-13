@@ -440,7 +440,12 @@ function extractLayout() {
   const nodes = graph.getNodes().map(n => {
     const { x, y } = n.getPosition()
     const { width, height } = n.getSize()
-    return { id: n.id, x, y, width, height }
+    const data = n.getData() || {}
+    const node = { id: n.id, x, y, width, height }
+    if (data.type) node.node_type = data.type
+    if (data.element_id) node.element_id = data.element_id
+    if (data.name != null) node.name = data.name
+    return node
   })
   const userEdges = graph.getEdges()
     .filter(e => !e.getData()?.isLoaded)

@@ -357,12 +357,183 @@ _FOLDER_TYPE = {
 }
 
 
+def _load_layout(view_id):
+    """Load saved canvas layout for a view; returns {} if not found."""
+    lp = _layout_path(view_id)
+    if not os.path.isfile(lp):
+        return {}
+    try:
+        with open(lp, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _export_collect(model):
+    """Walk model tree, return {view_id: layout} for all views that have saved layouts."""
+    result = {}
+    def walk(node):
+        if node.get('type') == 'view':
+            layout = _load_layout(node['id'])
+            if layout:
+                result[node['id']] = layout
+        for ch in node.get('children', []):
+            walk(ch)
+    walk(model)
+    return result
+
+
+def _make_child_element(node, XSI):
+    """Build a <child> ET.Element from a layout node dict (enhanced format)."""
+    ntype = node.get('node_type', 'element')
+    nid   = node.get('id', '')
+    child = ET.Element('child')
+    if ntype == 'element' and node.get('element_id'):
+        child.set(f'{{{XSI}}}type', 'archimate:DiagramObject')
+        child.set('id', nid)
+        child.set('archimateElement', node['element_id'])
+    elif ntype == 'group':
+        child.set(f'{{{XSI}}}type', 'archimate:Group')
+        child.set('id', nid)
+        if node.get('name'):
+            child.set('name', node['name'])
+    elif ntype == 'note':
+        child.set(f'{{{XSI}}}type', 'archimate:DiagramModelNote')
+        child.set('id', nid)
+        if node.get('name'):
+            c = ET.SubElement(child, 'content')
+            c.text = node['name']
+    else:
+        return None
+    b = ET.SubElement(child, 'bounds')
+    b.set('x', str(int(node.get('x', 0))))
+    b.set('y', str(int(node.get('y', 0))))
+    b.set('width', str(int(node.get('width', 120))))
+    b.set('height', str(int(node.get('height', 55))))
+    return child
+
+
+def _add_source_connection(src_xml, edge, rel_id, XSI):
+    """Append a <sourceConnection> to src_xml element."""
+    conn = ET.SubElement(src_xml, 'sourceConnection')
+    conn.set(f'{{{XSI}}}type', 'archimate:Connection')
+    conn.set('id', edge.get('id', ''))
+    conn.set('source', edge.get('source_cell', ''))
+    conn.set('target', edge.get('target_cell', ''))
+    conn.set('archimateRelationship', rel_id)
+    for v in edge.get('vertices', []):
+        bp = ET.SubElement(conn, 'bendpoint')
+        bp.set('startX', str(int(v.get('x', 0))))
+        bp.set('startY', str(int(v.get('y', 0))))
+
+
+def _copy_children_with_overrides(parent_out, parent_src, pos_override, abs_x, abs_y, built):
+    """Recursively copy <child> elements from source XML, updating <bounds> from pos_override.
+    Tracks copied elements in `built` {id → xml_elem} for later sourceConnection injection."""
+    import copy
+    for child in parent_src:
+        if _local(child.tag) != 'child':
+            continue
+        cid = child.get('id', '')
+        # Original relative bounds
+        ox, oy, ow, oh = 0, 0, 120, 55
+        for sub in child:
+            if _local(sub.tag) == 'bounds':
+                ox, oy = int(sub.get('x', 0)), int(sub.get('y', 0))
+                ow, oh = int(sub.get('width', 120)), int(sub.get('height', 55))
+                break
+        child_abs_x = abs_x + ox
+        child_abs_y = abs_y + oy
+        if cid in pos_override:
+            ov = pos_override[cid]
+            new_ax, new_ay = int(ov['x']), int(ov['y'])
+            rx, ry = new_ax - abs_x, new_ay - abs_y
+            rw, rh = int(ov['width']), int(ov['height'])
+            child_abs_x, child_abs_y = new_ax, new_ay
+        else:
+            rx, ry, rw, rh = ox, oy, ow, oh
+        new_child = ET.Element(child.tag, dict(child.attrib))
+        b = ET.SubElement(new_child, 'bounds')
+        b.set('x', str(rx)); b.set('y', str(ry))
+        b.set('width', str(rw)); b.set('height', str(rh))
+        for sub in child:
+            stag = _local(sub.tag)
+            if stag not in ('bounds', 'child'):
+                new_child.append(copy.deepcopy(sub))
+        if cid:
+            built[cid] = new_child
+        _copy_children_with_overrides(new_child, child, pos_override, child_abs_x, child_abs_y, built)
+        parent_out.append(new_child)
+
+
+def _append_diagram_children(view_xml, view_id, layout, source_root, XSI, user_edges_with_rel):
+    """Add <child> and <sourceConnection> elements to a view XML element for export."""
+    nodes = layout.get('nodes', [])
+    pos_override = {n['id']: n for n in nodes}
+    has_rich_data = any(n.get('element_id') or n.get('node_type') for n in nodes)
+
+    built = {}  # id → xml element (for attaching user connections)
+
+    if has_rich_data:
+        for node in nodes:
+            child_xml = _make_child_element(node, XSI)
+            if child_xml is not None:
+                view_xml.append(child_xml)
+                built[node['id']] = child_xml
+    elif source_root is not None:
+        source_view = None
+        for elem in source_root.iter():
+            if elem.get('id') == view_id and _el_type(elem.get(_XSI_TYPE, '')) in _VIEW_TYPES:
+                source_view = elem
+                break
+        if source_view is not None:
+            _copy_children_with_overrides(view_xml, source_view, pos_override, 0, 0, built)
+
+    for edge, rel_id in user_edges_with_rel:
+        src_xml = built.get(edge.get('source_cell', ''))
+        if src_xml is not None:
+            _add_source_connection(src_xml, edge, rel_id, XSI)
+
+
 def _build_archimate_xml(model):
-    import xml.etree.ElementTree as ET
+    import uuid as _uuid
     NS  = 'http://www.archimatetool.com/archimate'
     XSI = 'http://www.w3.org/2001/XMLSchema-instance'
     ET.register_namespace('archimate', NS)
     ET.register_namespace('xsi', XSI)
+
+    # Load original source XML (for diagrams not yet saved from canvas)
+    source_root = None
+    source_path = model.get('_source', '')
+    if source_path and os.path.isfile(source_path):
+        try:
+            source_root = ET.parse(source_path).getroot()
+        except ET.ParseError:
+            pass
+
+    # Load all saved layouts and build node_id → element_id lookup
+    layouts = _export_collect(model)
+    node_to_elem = {}
+    for layout in layouts.values():
+        for n in layout.get('nodes', []):
+            if n.get('element_id'):
+                node_to_elem[n['id']] = n['element_id']
+
+    # Pre-generate relation IDs for user-drawn edges
+    # user_edges_by_view: view_id → [(edge_dict, rel_id)]
+    user_edges_by_view = {}
+    new_relations = []  # (rel_id, rel_type, src_elem_id, tgt_elem_id)
+    for vid, layout in layouts.items():
+        pairs = []
+        for edge in layout.get('user_edges', []):
+            rel_id = str(_uuid.uuid4())
+            pairs.append((edge, rel_id))
+            src_eid = node_to_elem.get(edge.get('source_cell', ''), '')
+            tgt_eid = node_to_elem.get(edge.get('target_cell', ''), '')
+            if src_eid and tgt_eid:
+                new_relations.append((rel_id, edge.get('type', 'AssociationRelationship'), src_eid, tgt_eid))
+        if pairs:
+            user_edges_by_view[vid] = pairs
 
     root = ET.Element(f'{{{NS}}}model')
     root.set('name', model.get('name', ''))
@@ -373,14 +544,22 @@ def _build_archimate_xml(model):
 
     def build_node(parent, node):
         if node['type'] == 'node':
-            folder_type = _FOLDER_TYPE.get(node['name'],
+            ft = node.get('folder_type') or _FOLDER_TYPE.get(node['name'],
                           node['name'].lower().replace(' ', '_'))
             folder = ET.SubElement(parent, 'folder')
             folder.set('name', node['name'])
             folder.set('id',   node.get('id', ''))
-            folder.set('type', folder_type)
-            for child in node.get('children', []):
-                build_node(folder, child)
+            folder.set('type', ft)
+            for ch in node.get('children', []):
+                build_node(folder, ch)
+            if ft == 'relations':
+                for rel_id, rel_type, src_eid, tgt_eid in new_relations:
+                    rel = ET.SubElement(folder, 'element')
+                    rel.set(f'{{{XSI}}}type', f'archimate:{rel_type}')
+                    rel.set('id', rel_id)
+                    rel.set('name', '')
+                    rel.set('source', src_eid)
+                    rel.set('target', tgt_eid)
         elif node['type'] in ('element', 'view'):
             et = node.get('element_type', 'BusinessActor')
             elem = ET.SubElement(parent, 'element')
@@ -389,9 +568,17 @@ def _build_archimate_xml(model):
             elem.set('id',   node.get('id', ''))
             if node.get('documentation'):
                 elem.set('documentation', node['documentation'])
+            if node['type'] == 'view':
+                vid = node['id']
+                _append_diagram_children(
+                    elem, vid,
+                    layouts.get(vid, {}),
+                    source_root, XSI,
+                    user_edges_by_view.get(vid, []),
+                )
 
-    for child in model.get('children', []):
-        build_node(root, child)
+    for ch in model.get('children', []):
+        build_node(root, ch)
 
     ET.indent(root, space='  ')
     return b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode').encode('utf-8')
