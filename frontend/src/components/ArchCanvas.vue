@@ -566,6 +566,11 @@ watch(() => store.selected, node => {
   // canvas stays showing the current diagram
 })
 
+watch(() => store.activePaletteItem, item => {
+  if (containerRef.value)
+    containerRef.value.style.cursor = item?.kind === 'conn' ? 'crosshair' : ''
+})
+
 function clearDiagram() {
   diagramData.value = null
   currentViewId.value = null
