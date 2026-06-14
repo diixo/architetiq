@@ -11,15 +11,15 @@ from django.conf import settings
 _DEFAULT_MODEL = {
     "name": "*New Model", "type": "model", "id": "00000000-0000-0000-0000-000000000000",
     "children": [
-        {"id": "00000000-0000-0000-0001-000000000001", "name": "Strategy",                     "type": "node", "folder_type": "strategy",                "children": []},
-        {"id": "00000000-0000-0000-0001-000000000002", "name": "Business",                     "type": "node", "folder_type": "business",                "children": []},
-        {"id": "00000000-0000-0000-0001-000000000003", "name": "Application",                  "type": "node", "folder_type": "application",             "children": []},
-        {"id": "00000000-0000-0000-0001-000000000004", "name": "Technology And Physical",      "type": "node", "folder_type": "technology",              "children": []},
-        {"id": "00000000-0000-0000-0001-000000000005", "name": "Motivation",                   "type": "node", "folder_type": "motivation",              "children": []},
-        {"id": "00000000-0000-0000-0001-000000000006", "name": "Implementation and Migration", "type": "node", "folder_type": "implementation_migration", "children": []},
-        {"id": "00000000-0000-0000-0001-000000000007", "name": "Other",                        "type": "node", "folder_type": "other",                   "children": []},
-        {"id": "00000000-0000-0000-0001-000000000008", "name": "Relations",                    "type": "node", "folder_type": "relations",               "children": []},
-        {"id": "00000000-0000-0000-0001-000000000009", "name": "Views",                        "type": "node", "folder_type": "diagrams",                "children": [
+        {"id": "00000000-0000-0000-0001-000000000001", "name": "Strategy",                      "type": "node", "folder_type": "strategy",                "children": []},
+        {"id": "00000000-0000-0000-0001-000000000002", "name": "Business",                      "type": "node", "folder_type": "business",                "children": []},
+        {"id": "00000000-0000-0000-0001-000000000003", "name": "Application",                   "type": "node", "folder_type": "application",             "children": []},
+        {"id": "00000000-0000-0000-0001-000000000004", "name": "Technology & Physical",         "type": "node", "folder_type": "technology",              "children": []},
+        {"id": "00000000-0000-0000-0001-000000000005", "name": "Motivation",                    "type": "node", "folder_type": "motivation",              "children": []},
+        {"id": "00000000-0000-0000-0001-000000000006", "name": "Implementation & Migration",    "type": "node", "folder_type": "implementation_migration", "children": []},
+        {"id": "00000000-0000-0000-0001-000000000007", "name": "Other",                         "type": "node", "folder_type": "other",                   "children": []},
+        {"id": "00000000-0000-0000-0001-000000000008", "name": "Relations",                     "type": "node", "folder_type": "relations",               "children": []},
+        {"id": "00000000-0000-0000-0001-000000000009", "name": "Views",                         "type": "node", "folder_type": "diagrams",                "children": [
             {"id": "00000000-0000-0000-0000-000000000001", "name": "Default View",
              "type": "view", "element_type": "ArchimateDiagramModel",
              "documentation": "", "children": []},
@@ -42,15 +42,17 @@ _SKIP_TYPES = {"Relationship", "Relation"}
 
 
 _FOLDER_TYPE_BY_NAME = {
-    "Strategy":                     "strategy",
-    "Business":                     "business",
-    "Application":                  "application",
-    "Technology And Physical":      "technology",
-    "Motivation":                   "motivation",
-    "Implementation and Migration": "implementation_migration",
-    "Other":                        "other",
-    "Relations":                    "relations",
-    "Views":                        "diagrams",
+    "Strategy":                      "strategy",
+    "Business":                      "business",
+    "Application":                   "application",
+    "Technology & Physical":         "technology",
+    "Technology And Physical":       "technology",       # legacy
+    "Motivation":                    "motivation",
+    "Implementation & Migration":    "implementation_migration",
+    "Implementation and Migration":  "implementation_migration",  # legacy
+    "Other":                         "other",
+    "Relations":                     "relations",
+    "Views":                         "diagrams",
 }
 
 
@@ -347,9 +349,11 @@ _FOLDER_TYPE = {
     'Strategy':                      'strategy',
     'Business':                      'business',
     'Application':                   'application',
-    'Technology And Physical':       'technology',
+    'Technology & Physical':         'technology',
+    'Technology And Physical':       'technology',       # legacy
     'Motivation':                    'motivation',
-    'Implementation and Migration':  'implementation_migration',
+    'Implementation & Migration':    'implementation_migration',
+    'Implementation and Migration':  'implementation_migration',  # legacy
     'Other':                         'other',
     'Relations':                     'relations',
     'Views':                         'diagrams',

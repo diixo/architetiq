@@ -1,122 +1,79 @@
 {
-  "name": "TestModel",
+  "name": "*New Model",
   "type": "model",
-  "id": "id-c625bdc49f404714888443c3a9c9c5b9",
+  "id": "00000000-0000-0000-0000-000000000000",
   "children": [
     {
+      "id": "00000000-0000-0000-0001-000000000001",
       "name": "Strategy",
       "type": "node",
-      "id": "id-3864d922c5e04ed68bffbb4e00de9183",
-      "children": [],
-      "folder_type": "strategy"
+      "folder_type": "strategy",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000002",
       "name": "Business",
       "type": "node",
-      "id": "id-24a139b588924cef8e97d34cc8d49ea0",
-      "children": [
-        {
-          "id": "2dba5c83-cc7d-4e75-9379-d62504515153",
-          "name": "Business Actor",
-          "type": "element",
-          "element_type": "BusinessActor",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "a324045b-6649-48d8-a54f-c45151166255",
-          "name": "Business Actor",
-          "type": "element",
-          "element_type": "BusinessActor",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "0edcbb1a-d5fd-4844-b9db-596e8c05114e",
-          "name": "Business Actor",
-          "type": "element",
-          "element_type": "BusinessActor",
-          "documentation": "",
-          "children": []
-        }
-      ],
-      "folder_type": "business"
+      "folder_type": "business",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000003",
       "name": "Application",
       "type": "node",
-      "id": "id-efc8dda6a15b4e73970b831728f9d93e",
-      "children": [
-        {
-          "id": "998cfee5-5e56-4b4c-8ec1-d58e717ee2e9",
-          "name": "Data Object",
-          "type": "element",
-          "element_type": "DataObject",
-          "documentation": "",
-          "children": []
-        }
-      ],
-      "folder_type": "application"
+      "folder_type": "application",
+      "children": []
     },
     {
-      "name": "Technology & Physical",
+      "id": "00000000-0000-0000-0001-000000000004",
+      "name": "Technology And Physical",
       "type": "node",
-      "id": "id-2cac1338a6a045f9997f77bb8990ba22",
-      "children": [],
-      "folder_type": "technology"
+      "folder_type": "technology",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000005",
       "name": "Motivation",
       "type": "node",
-      "id": "id-2aa3457a186d4565ad767e5f1b0b67be",
-      "children": [],
-      "folder_type": "motivation"
+      "folder_type": "motivation",
+      "children": []
     },
     {
-      "name": "Implementation & Migration",
+      "id": "00000000-0000-0000-0001-000000000006",
+      "name": "Implementation and Migration",
       "type": "node",
-      "id": "id-3eab1803d3174a97a95a254cabe46567",
-      "children": [],
-      "folder_type": "implementation_migration"
+      "folder_type": "implementation_migration",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000007",
       "name": "Other",
       "type": "node",
-      "id": "id-6c8bd4a867d946abbb493ed65e753523",
-      "children": [
-        {
-          "name": "Grouping",
-          "type": "element",
-          "element_type": "Grouping",
-          "id": "id-77b5d62f8a154c2b958043441d47547a",
-          "documentation": "",
-          "children": []
-        }
-      ],
-      "folder_type": "other"
+      "folder_type": "other",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000008",
       "name": "Relations",
       "type": "node",
-      "id": "id-a6562b1f0c984c93a0139f1972e3319c",
-      "children": [],
-      "folder_type": "relations"
+      "folder_type": "relations",
+      "children": []
     },
     {
+      "id": "00000000-0000-0000-0001-000000000009",
       "name": "Views",
       "type": "node",
-      "id": "id-c809c59a772b44cdaf1b4ed7408bf521",
+      "folder_type": "diagrams",
       "children": [
         {
+          "id": "00000000-0000-0000-0000-000000000001",
           "name": "Default View",
           "type": "view",
           "element_type": "ArchimateDiagramModel",
-          "id": "id-94d17ed16bdf42bd8b890db3db0a9f65",
           "documentation": "",
           "children": []
         }
-      ],
-      "folder_type": "diagrams"
+      ]
     }
   ]
 }

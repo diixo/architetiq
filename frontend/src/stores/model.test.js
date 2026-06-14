@@ -3,8 +3,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useModelStore } from './model'
 
 const DEFAULT_NAMES = [
-  'Strategy', 'Business', 'Application', 'Technology And Physical',
-  'Motivation', 'Implementation and Migration', 'Other', 'Relations', 'Views',
+  'Strategy', 'Business', 'Application', 'Technology & Physical',
+  'Motivation', 'Implementation & Migration', 'Other', 'Relations', 'Views',
 ]
 
 // ── helpers ───────────────────────────────────────────────────────────────────
