@@ -29,10 +29,20 @@
       <template v-else-if="store.model">
         <b v-if="!store.filterQuery">
           <a href="#" class="text-decoration-none text-dark"
-             @click.prevent="store.selectNode(store.model)">
+             @click.prevent="store.selectNode(store.model)"
+             @contextmenu.prevent="openModelMenu">
             {{ store.model.name }}
           </a>
         </b>
+
+        <Teleport to="body">
+          <div v-if="modelMenu.visible" ref="modelMenuRef" class="tree-ctx-menu shadow"
+               :style="{ top: modelMenu.y + 'px', left: modelMenu.x + 'px' }" @click.stop>
+            <div class="tree-ctx-item" @click="onModelProperties">
+              <span class="me-2" style="width:1em;flex-shrink:0;"></span>Properties
+            </div>
+          </div>
+        </Teleport>
         <ul class="tree ms-2 mt-1">
           <TreeNode
             v-for="child in store.model.children"
@@ -47,13 +57,30 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
 import { useModelStore } from '../stores/model'
 import TreeNode from './TreeNode.vue'
 
 const store    = useModelStore()
 const searching = ref(false)
 const inputRef  = ref(null)
+
+const modelMenuRef = ref(null)
+const modelMenu = reactive({ visible: false, x: 0, y: 0 })
+
+function openModelMenu(e) {
+  modelMenu.x = e.clientX
+  modelMenu.y = e.clientY
+  modelMenu.visible = true
+}
+function closeModelMenu() { modelMenu.visible = false }
+function onModelProperties() {
+  store.selectNode(store.model)
+  closeModelMenu()
+}
+function onModelMenuOutside(e) {
+  if (modelMenuRef.value && !modelMenuRef.value.contains(e.target)) closeModelMenu()
+}
 
 async function startSearch() {
   searching.value = true
@@ -66,6 +93,9 @@ function stopSearch() {
   searching.value = false
 }
 
-import { onMounted } from 'vue'
-onMounted(() => store.fetchModel())
+onMounted(() => {
+  store.fetchModel()
+  document.addEventListener('mousedown', onModelMenuOutside, true)
+})
+onUnmounted(() => document.removeEventListener('mousedown', onModelMenuOutside, true))
 </script>

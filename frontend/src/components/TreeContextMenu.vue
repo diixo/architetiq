@@ -66,6 +66,11 @@
       >
         <i class="bi bi-trash3 me-2"></i>Delete
       </div>
+
+      <div class="tree-ctx-divider"></div>
+      <div class="tree-ctx-item" @click="onProperties">
+        <span class="me-2" style="width:1em;flex-shrink:0;"></span>Properties
+      </div>
     </div>
   </Teleport>
 </template>
@@ -166,6 +171,11 @@ function onAddElement(et) {
 
 function onRename() {
   emit('start-edit')
+  close()
+}
+
+function onProperties() {
+  store.selectNode(props.node)
   close()
 }
 
