@@ -609,7 +609,7 @@ function renderDiagram() {
     } catch (_) { /* skip invalid */ }
   }
 
-  graph.zoomToFit({ padding: 24 })
+  graph.zoomToFit({ padding: 24, maxScale: 1 })
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
