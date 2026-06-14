@@ -34,63 +34,28 @@
         <!-- Tree panel -->
         <div class="panel root-panel flex-grow-1">
           <div class="panel-heading">
-            <b>Model Tree</b>
+            <b>Processes</b>
           </div>
-          <div class="panel-body root-panel-body p-2">
-              <b>
-                <a href="#" class="text-decoration-none text-dark">{{ Processes }}</a>
-              </b>
-              <ul class="tree ms-3" style="font-size: 0.875rem;">
-                {% for node in model.children %}
-                <li class="tree-folder">
-                  <span>
-                    <i class="bi bi-caret-right-fill"></i>
-                    {% if node.type == "node" %}<i class="bi bi-folder-fill" style="color: #ffc107;"></i>{% endif %}
-                    {{ node.name }}
-                  </span>
-                  <ul></ul>
-                </li>
-                {% endfor %}
-              </ul>
+          <div class="panel-body root-panel-body p-3">
+
+            <nav class="nav nav-pills flex-column mb-auto" role="tablist">
+              <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-workflows"      href="#" role="tab">Workflows</a>
+              <a class="nav-link"        data-bs-toggle="tab" data-bs-target="#pane-work-products"  href="#" role="tab">Work Products</a>
+              <a class="nav-link"        data-bs-toggle="tab" data-bs-target="#pane-activities"     href="#" role="tab">Activities</a>
+            </nav>
           </div>
         </div>
-        <!-- Element detail -->
-        <div class="panel overflow-auto" style="height: 250px; border-top: 1px solid #ddd; border-radius: 0;">
-          <div class="panel-body d-flex align-items-center justify-content-center h-100">
-            <p class="text-muted text-center mb-0">Select an element in the model tree or in a view to show its details here</p>
-          </div>
-        </div>
+
       </div>
 
       <!-- Main content -->
       <div class="flex-grow-1 overflow-auto">
         <div class="panel root-panel">
-          <div class="panel-heading"><b>Processes</b></div>
-          <div class="panel-body root-panel-body">
-            <ul class="nav nav-tabs mb-3" role="tablist">
-              <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#purpose" type="button" role="tab">Properties</button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#validator" type="button" role="tab">Validator</button>
-              </li>
-            </ul>
-            <div class="tab-content pt-2 border" style="background-color: #eaeaea;">
-              <div class="tab-pane active" id="purpose" role="tabpanel" style="white-space: pre-wrap;"></div>
-              <div class="tab-pane" id="validator" role="tabpanel"></div>
-              <div class="small ms-2">Default name</div>
 
-              <div class="d-flex mt-2 bg-white" >
-                <div class="nav flex-column nav-pills me-3" role="tablist" aria-orientation="vertical" style="gap:0;">
-                  <button class="nav-link active vpane-tab btn" data-bs-toggle="pill" data-bs-target="#vpane-main"       type="button" role="tab">Main</button>
-                  <button class="nav-link        vpane-tab btn" data-bs-toggle="pill" data-bs-target="#vpane-properties" type="button" role="tab">Properties</button>
-                </div>
-                <div class="tab-content flex-grow-1">
-                  <div class="tab-pane fade show active" id="vpane-main"       role="tabpanel"></div>
-                  <div class="tab-pane fade"             id="vpane-properties" role="tabpanel"></div>
-                </div>
-              </div>
-            </div>
+          <div class="panel-body root-panel-body tab-content">
+            <div class="tab-pane show active p-3" id="pane-workflows"     role="tabpanel"><h6>Workflows</h6></div>
+            <div class="tab-pane p-3"             id="pane-work-products" role="tabpanel"><h6>Work Products</h6></div>
+            <div class="tab-pane p-3"             id="pane-activities"    role="tabpanel"><h6>Activities</h6></div>
           </div>
         </div>
       </div>
