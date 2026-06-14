@@ -1034,3 +1034,10 @@ def upload_model(request):
         json.dump(model, out, ensure_ascii=False, indent=2)
 
     return JsonResponse({"ok": True, "name": model["name"]})
+
+
+def processes(request):
+    return render(request, "app_main/processes.html", context={
+        "title": "Processes",
+        "description": "Processes description",
+    })

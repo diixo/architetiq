@@ -33,6 +33,9 @@
             <a class="nav-link active" href="#"><i class="bi bi-house-door me-2"></i>Overview</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="/processes/"><i class="bi bi-diagram-3 me-2"></i>Processes</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="#" @click.prevent="onNew"><i class="bi bi-file me-2"></i>New</a>
           </li>
           <li class="nav-item">
@@ -77,6 +80,7 @@
             <li><a class="dropdown-item" href="/api/model/export/" target="_blank">Export .archimate</a></li>
           </ul>
         </li>
+        <li class="nav-item"><a class="nav-link" href="/processes/"><i class="bi bi-diagram-3"></i> Processes</a></li>
         <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-list-check"></i> Requirements</a></li>
         <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-diagram-3"></i> Architecture</a></li>
         <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-kanban"></i> Scenarios</a></li>

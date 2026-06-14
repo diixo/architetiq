@@ -13,5 +13,6 @@ urlpatterns = [
     path("api/diagram/<str:view_id>/save/", views.api_diagram_save, name="api_diagram_save"),
     path("upload/",           views.upload_model,     name="upload_model"),
     path("django/",           views.main,             name="main"),
+    path("processes/",        views.processes,        name="processes"),
     path("",                  views.spa,              name="spa"),
 ]
