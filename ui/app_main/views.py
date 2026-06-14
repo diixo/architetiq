@@ -289,10 +289,16 @@ def _parse_archimate(content):
 
 @ensure_csrf_cookie
 def spa(request):
-    index = Path(settings.FRONTEND_DIST) / 'index.html'
-    if index.exists():
-        return HttpResponse(index.read_text(encoding='utf-8'), content_type='text/html')
-    return HttpResponse('Frontend not built. Run: cd frontend && npm run build', status=503)
+    manifest_path = Path(settings.FRONTEND_DIST) / '.vite' / 'manifest.json'
+    if not manifest_path.exists():
+        return HttpResponse('Frontend not built. Run: cd frontend && npm run build', status=503)
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    entry = manifest.get('index.html', {})
+    js_file = entry.get('file', '')
+    return render(request, 'app_main/spa.html', {
+        'vue_js':  f'/static/vue/{js_file}' if js_file else '',
+        'vue_css': [f'/static/vue/{c}' for c in entry.get('css', [])],
+    })
 
 
 @ensure_csrf_cookie

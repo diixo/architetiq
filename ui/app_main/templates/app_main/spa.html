@@ -1,0 +1,15 @@
+{% extends "app_main/base.html" %}
+
+{% block site_header %}
+{% endblock %}
+
+{% block content %}
+<div id="app" class="w-100"></div>
+{% endblock %}
+
+{% block vue_bundle %}
+{% for css in vue_css %}
+<link rel="stylesheet" href="{{ css }}">
+{% endfor %}
+<script type="module" src="{{ vue_js }}"></script>
+{% endblock %}

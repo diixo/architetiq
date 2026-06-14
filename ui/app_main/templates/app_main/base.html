@@ -44,6 +44,7 @@
 
   <body>
 
+    {% block site_header %}
     <!-- Header -->
     <header class="app-header">
       <div style="padding-left: 1.75rem; padding-right: 1.75rem; padding-top: 0.75rem; padding-bottom: 0.75rem;">
@@ -207,6 +208,7 @@
         </ul>
       </div>
     </nav>
+    {% endblock site_header %}
 
     <!-- Main content -->
     <main class="app-layout d-flex bg-dark-subtle">
@@ -324,6 +326,8 @@
 
     {% load static %}
     <script src="{% static 'app_main/assets/js/bootstrap.bundle.min.js' %}"></script>
+
+    {% block vue_bundle %}{% endblock %}
 
     <input type="file" id="archimate-file-input" accept=".archimate,.xml" style="display:none">
     <script>
