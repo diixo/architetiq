@@ -13,8 +13,8 @@ export const ELEMENT_ICON = {
   BusinessService:       'am-service',
   // Business — passive
   BusinessObject:        'am-object',
-  Contract:              'am-object',
-  Representation:        'am-object',
+  Contract:              'am-contract',
+  Representation:        'am-representation',
   Product:               'am-product',
   // Application — active
   ApplicationComponent:    'am-component',
@@ -70,10 +70,10 @@ export const ELEMENT_ICON = {
   CourseOfAction: 'am-courseofaction',
   ValueStream:    'am-valuestream',
   // Other
-  Location:       'am-facility',
-  Grouping:       'am-collab',
+  Location:       'am-location',
+  Grouping:       'am-grouping',
   // Physical
-  DistributionNetwork: 'am-network',
+  DistributionNetwork: 'am-distribution-network',
   // Relations (shown in palette — reuse marker-like icons)
   AssociationRelationship:    'am-path',
   CompositionRelationship:    'am-fill-dia',
@@ -86,7 +86,7 @@ export const ELEMENT_ICON = {
   TriggeringRelationship:     'am-fill-tri',
   FlowRelationship:           'am-fill-tri',
   SpecializationRelationship: 'am-open-tri',
-  Junction:                   'am-outcome',
+  Junction:                   'am-junction',
   // View extras
   Note:           'am-meaning',
   DiagramGroup:   'am-capability',

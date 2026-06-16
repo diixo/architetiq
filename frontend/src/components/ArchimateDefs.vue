@@ -21,36 +21,35 @@
         <rect x="1" y="1" width="14" height="9" rx="4.5" ry="4.5" fill="#555"/>
       </symbol>
 
-      <!-- Event: concave left arc (from Archi EventFigure.java — arc+rect+arc) -->
+      <!-- Event: concave left + convex right (from Archi EventFigure iconDelegate) -->
       <symbol id="am-event" viewBox="0 0 16 16">
-        <path d="M6,0 H16 V16 H6 Q0,12.5 0,8 Q0,3.5 6,0 Z" fill="#555"/>
+        <path d="M2,2 Q6,8 2,14 H12 Q16,8 12,2 Z" fill="#555"/>
       </symbol>
 
-      <!-- Interaction: two overlapping circles -->
+      <!-- Interaction: two D-shapes facing outward — () (from Archi InteractionFigure iconDelegate) -->
       <symbol id="am-interaction" viewBox="0 0 16 16">
-        <circle cx="5"  cy="8" r="5" fill="#555" opacity="0.7"/>
-        <circle cx="11" cy="8" r="5" fill="#555" opacity="0.7"/>
+        <path d="M7,1 A6,7 0 0 0 7,15 Z" fill="#555"/>
+        <path d="M9,1 A6,7 0 0 1 9,15 Z" fill="#555"/>
       </symbol>
 
       <!-- ── Active Structure ────────────────────────────────────────────── -->
 
-      <!-- Actor: person silhouette -->
+      <!-- Actor: stick figure — head + body + arms + legs (from Archi BusinessActorFigure.java) -->
       <symbol id="am-actor" viewBox="0 0 16 16">
-        <circle cx="8" cy="4" r="3.5" fill="#555"/>
-        <path d="M1,16 Q1,9 8,9 Q15,9 15,16 Z" fill="#555"/>
+        <circle cx="8" cy="3" r="2.5" fill="#555"/>
+        <line x1="8" y1="5.5" x2="8"  y2="11"  stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="3" y1="8"   x2="13" y2="8"   stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="8" y1="11"  x2="4"  y2="15.5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="8" y1="11"  x2="12" y2="15.5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
       </symbol>
 
-      <!-- Role: lens / binoculars shape (from Archi BusinessRoleFigure.java — two ovals) -->
+      <!-- Role: scroll shape — left half-ellipse + two lines + right oval cap (from Archi BusinessRoleFigure.java) -->
       <symbol id="am-role" viewBox="0 0 16 16">
-        <!-- left oval (half-arc) -->
-        <path d="M5,2 a4,6 0 0 0 0,12 a4,6 0 0 0 0,-12 Z
-                 M5,4 a2,4 0 0 1 0,8 a2,4 0 0 1 0,-8 Z"
-              fill="#555" fill-rule="evenodd"/>
-        <!-- right oval (full) -->
-        <path d="M11,2 a4,6 0 0 1 0,12 a4,6 0 0 1 0,-12 Z
-                 M11,4 a2,4 0 0 0 0,8 a2,4 0 0 0 0,-8 Z"
-              fill="#555" fill-rule="evenodd"/>
-        <rect x="5" y="7" width="6" height="2" fill="#555"/>
+        <path d="M4,2 a3,6 0 0 0 0,12"
+              fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4"  y1="2"  x2="12" y2="2"  stroke="#555" stroke-width="2"/>
+        <line x1="4"  y1="14" x2="12" y2="14" stroke="#555" stroke-width="2"/>
+        <ellipse cx="12" cy="8" rx="3" ry="6" fill="none" stroke="#555" stroke-width="2"/>
       </symbol>
 
       <!-- Collaboration: two overlapping circles (filled) -->
@@ -59,19 +58,32 @@
         <circle cx="11" cy="8" r="4.5" fill="#555" opacity="0.65"/>
       </symbol>
 
-      <!-- Interface: lollipop — filled circle + stem + base -->
+      <!-- Interface: horizontal lollipop — stem + circle (from Archi InterfaceFigure.java) -->
       <symbol id="am-interface" viewBox="0 0 16 16">
-        <circle cx="8" cy="5" r="4" fill="#555"/>
-        <rect   x="7" y="9"  width="2" height="5" fill="#555"/>
-        <rect   x="4" y="14" width="8" height="2" fill="#555"/>
+        <rect   x="0" y="7" width="7" height="2" fill="#555"/>
+        <circle cx="12" cy="8" r="4" fill="#555"/>
       </symbol>
 
       <!-- ── Passive Structure ───────────────────────────────────────────── -->
 
-      <!-- Object / Contract / Representation: page with folded top-right corner -->
+      <!-- Contract: rectangle with two horizontal dividers (3 bands, from Archi ContractFigure.java) -->
+      <symbol id="am-contract" viewBox="0 0 16 16">
+        <rect x="1" y="2" width="14" height="12" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="1" y1="6"  x2="15" y2="6"  stroke="#555" stroke-width="1.5"/>
+        <line x1="1" y1="10" x2="15" y2="10" stroke="#555" stroke-width="1.5"/>
+      </symbol>
+
+      <!-- Representation: wavy-bottom rectangle + top divider line (from Archi RepresentationFigure.java) -->
+      <symbol id="am-representation" viewBox="0 0 16 16">
+        <path d="M0,0 H16 V11 Q13.5,14 11,11.5 Q8.5,9 6,11.5 Q3,14 0,11.5 Z"
+              fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="0" y1="4" x2="16" y2="4" stroke="#555" stroke-width="1.5"/>
+      </symbol>
+
+      <!-- Object / DataObject / BusinessObject: rectangle with header divider at 1/3 (from Archi *ObjectFigure.java) -->
       <symbol id="am-object" viewBox="0 0 16 16">
-        <path d="M0,0 h10 l6,6 v10 h-16 Z" fill="#999"/>
-        <path d="M10,0 v6 h6" fill="none" stroke="#ccc" stroke-width="1"/>
+        <rect x="1" y="2" width="14" height="12" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="1" y1="6" x2="15" y2="6" stroke="#555" stroke-width="1.5"/>
       </symbol>
 
       <!-- Product: rectangle with tag notch -->
@@ -80,12 +92,10 @@
         <path d="M13,5 l3,3 l-3,3" fill="#999"/>
       </symbol>
 
-      <!-- Artifact: page with fold + two lines -->
+      <!-- Artifact: page with dog-ear fold top-right (from Archi ArtifactFigure.java) -->
       <symbol id="am-artifact" viewBox="0 0 16 16">
-        <path d="M0,0 h10 l6,6 v10 h-16 Z" fill="#999"/>
-        <path d="M10,0 v6 h6" fill="none" stroke="#ccc" stroke-width="1"/>
-        <rect x="2" y="8"  width="8" height="1.5" fill="white" opacity="0.6"/>
-        <rect x="2" y="11" width="5" height="1.5" fill="white" opacity="0.6"/>
+        <path d="M2,0.5 L9,0.5 L14,5.5 L14,15.5 L2,15.5 Z" fill="#555"/>
+        <path d="M9,0.5 L9,5.5 L14,5.5" fill="none" stroke="#888" stroke-width="1"/>
       </symbol>
 
       <!-- ── Application ────────────────────────────────────────────────── -->
@@ -107,38 +117,36 @@
         <polygon points="0,5 12,5 12,16 0,16"            fill="#666"/>
       </symbol>
 
-      <!-- Device: 3D box with small notch on top -->
+      <!-- Device: monitor screen (rounded rect) + trapezoidal stand (from Archi DeviceFigure.java) -->
       <symbol id="am-device" viewBox="0 0 16 16">
-        <polygon points="0,5 4,1 16,1 16,13 12,16 0,16" fill="#555"/>
-        <polygon points="0,5 4,1 16,1 12,5"              fill="#777"/>
-        <polygon points="12,5 16,1 16,13 12,16"          fill="#444"/>
-        <polygon points="0,5 12,5 12,16 0,16"            fill="#666"/>
-        <rect x="4" y="2" width="4" height="2" fill="#999"/>
+        <rect x="2" y="1" width="12" height="8.5" rx="2" ry="2" fill="#555"/>
+        <polygon points="1.5,15 4.5,9.5 11.5,9.5 14.5,15" fill="#555"/>
       </symbol>
 
-      <!-- SystemSoftware: window-like frame -->
+      <!-- SystemSoftware: two diagonally offset filled circles (from Archi SystemSoftwareFigure.java) -->
       <symbol id="am-systemsoftware" viewBox="0 0 16 16">
-        <rect x="0" y="0" width="16" height="16" rx="1" fill="#555"/>
-        <rect x="1" y="4" width="14" height="11" fill="#888" rx="0.5"/>
-        <circle cx="3" cy="2" r="1" fill="#aaa"/>
-        <circle cx="7" cy="2" r="1" fill="#aaa"/>
+        <circle cx="6"  cy="10" r="5" fill="#555" opacity="0.65"/>
+        <circle cx="10" cy="6"  r="5" fill="#555" opacity="0.65"/>
       </symbol>
 
-      <!-- Network: three nodes connected -->
+      <!-- Network: four nodes in diamond + connecting lines (from Archi CommunicationNetworkFigure.java) -->
       <symbol id="am-network" viewBox="0 0 16 16">
-        <circle cx="8"  cy="2"  r="2.5" fill="#555"/>
-        <circle cx="2"  cy="13" r="2.5" fill="#555"/>
-        <circle cx="14" cy="13" r="2.5" fill="#555"/>
-        <path d="M8,4.5 L2,10.5 M8,4.5 L14,10.5 M4.5,13 L11.5,13"
-              stroke="#555" stroke-width="1.5" fill="none"/>
+        <circle cx="8"    cy="1.5"  r="2" fill="#555"/>
+        <circle cx="14.5" cy="8"    r="2" fill="#555"/>
+        <circle cx="8"    cy="14.5" r="2" fill="#555"/>
+        <circle cx="1.5"  cy="8"    r="2" fill="#555"/>
+        <line x1="8"    y1="3.5"  x2="12.5" y2="6.1"  stroke="#555" stroke-width="1.2"/>
+        <line x1="12.5" y1="9.9"  x2="8"    y2="12.5" stroke="#555" stroke-width="1.2"/>
+        <line x1="3.5"  y1="9.9"  x2="8"    y2="12.5" stroke="#555" stroke-width="1.2"/>
+        <line x1="8"    y1="3.5"  x2="3.5"  y2="6.1"  stroke="#555" stroke-width="1.2"/>
       </symbol>
 
-      <!-- Path: two endpoints + dashed line -->
+      <!-- Path: left/right chevrons + dashed middle (from Archi PathFigure iconDelegate) -->
       <symbol id="am-path" viewBox="0 0 16 16">
-        <circle cx="2" cy="8" r="2.5" fill="#555"/>
-        <circle cx="14" cy="8" r="2.5" fill="#555"/>
-        <path d="M4.5,8 L11.5,8" stroke="#555" stroke-width="2"
-              stroke-dasharray="2.5 2" fill="none"/>
+        <polyline points="5,3 1,8 5,13"  fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
+        <line x1="6"  y1="8" x2="7.5" y2="8" stroke="#555" stroke-width="1.5"/>
+        <line x1="8.5" y1="8" x2="10" y2="8" stroke="#555" stroke-width="1.5"/>
+        <polyline points="11,3 15,8 11,13" fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
       </symbol>
 
       <!-- Equipment: gear -->
@@ -158,102 +166,97 @@
         <rect x="8.5" y="6.5" width="2" height="2" fill="white" opacity="0.4"/>
       </symbol>
 
-      <!-- Material: 3D box/package -->
+      <!-- Material: flat-top hexagon with 3 faces (from Archi MaterialFigure.java) -->
       <symbol id="am-material" viewBox="0 0 16 16">
-        <polygon points="8,0 16,4 16,12 8,16 0,12 0,4"  fill="#777"/>
-        <polygon points="8,0 16,4 8,8 0,4"              fill="#aaa"/>
-        <polygon points="16,4 16,12 8,16 8,8"           fill="#555"/>
+        <polygon points="4,1 12,1 8,8 0,8"   fill="#aaa"/>
+        <polygon points="12,1 16,8 12,15 8,8" fill="#555"/>
+        <polygon points="0,8 8,8 12,15 4,15"  fill="#777"/>
       </symbol>
 
       <!-- ── Motivation ─────────────────────────────────────────────────── -->
 
-      <!-- Outcome: 3 concentric circles + arrow (from Archi OutcomeFigure.java) -->
+      <!-- Outcome: 4 concentric circles + arrow upper-right (from Archi OutcomeFigure iconDelegate) -->
       <symbol id="am-outcome" viewBox="0 0 20 16">
-        <!-- outer circle r≈6, center ~(7,8) -->
-        <circle cx="7" cy="8" r="6"   fill="none" stroke="#555" stroke-width="1.5"/>
-        <!-- middle circle r≈4 -->
-        <circle cx="7" cy="8" r="3.5" fill="none" stroke="#555" stroke-width="1.5"/>
-        <!-- inner circle r≈1.5 -->
-        <circle cx="7" cy="8" r="1.5" fill="#555"/>
-        <!-- arrow from center to upper-right -->
-        <line x1="7" y1="8" x2="17" y2="1" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="7" cy="8" r="6"   fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="7" cy="8" r="3.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="7" cy="8" r="1.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="7" cy="8" r="0.6" fill="#555"/>
+        <line x1="7" y1="8" x2="17" y2="1" stroke="#555" stroke-width="1.2" stroke-linecap="round"/>
         <polygon points="14,0 19,0.5 17.5,5" fill="#555"/>
       </symbol>
 
-      <!-- Goal: empty circle (ring) -->
+      <!-- Goal: 4 concentric circles — bullseye (from Archi GoalFigure iconDelegate) -->
       <symbol id="am-goal" viewBox="0 0 16 16">
-        <path d="M8,1 a7,7 0 0 1 0,14 a7,7 0 0 1 0,-14 Z
-                 M8,4 a4,4 0 0 0 0,8 a4,4 0 0 0 0,-8 Z"
-              fill="#555" fill-rule="evenodd"/>
+        <circle cx="8" cy="8" r="6.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="8" cy="8" r="4"   fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="8" cy="8" r="1.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="8" cy="8" r="0.6" fill="#555"/>
       </symbol>
 
-      <!-- Stakeholder: person inside circle -->
+      <!-- Stakeholder: left D-arc + rect + right circle (from Archi StakeholderFigure iconDelegate) -->
       <symbol id="am-stakeholder" viewBox="0 0 16 16">
-        <path d="M8,1 a7,7 0 0 1 0,14 a7,7 0 0 1 0,-14 Z
-                 M8,4 a4,4 0 0 0 0,8 a4,4 0 0 0 0,-8 Z"
-              fill="#555" fill-rule="evenodd"/>
-        <circle cx="8" cy="5.5" r="2" fill="#555"/>
-        <path d="M4,13 Q4,9.5 8,9.5 Q12,9.5 12,13" fill="#555"/>
+        <path d="M6,4 a4,4 0 0 0 0,8" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="6" y1="4"  x2="11" y2="4"  stroke="#555" stroke-width="1.5"/>
+        <line x1="6" y1="12" x2="11" y2="12" stroke="#555" stroke-width="1.5"/>
+        <circle cx="13.5" cy="8" r="3.5" fill="white" stroke="#555" stroke-width="1.5"/>
       </symbol>
 
-      <!-- Driver: upward arrow / cloud-arrow -->
+      <!-- Driver: circle with crossed lines + filled center (from Archi DriverFigure.java) -->
       <symbol id="am-driver" viewBox="0 0 16 16">
-        <path d="M8,1 L13,8 H10 V15 H6 V8 H3 Z" fill="#555"/>
+        <circle cx="8" cy="8" r="6.5" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="8" y1="1.5" x2="8" y2="14.5" stroke="#555" stroke-width="1.5"/>
+        <line x1="1.5" y1="8" x2="14.5" y2="8"  stroke="#555" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="2" fill="#555"/>
       </symbol>
 
-      <!-- Assessment: balance/scale -->
+      <!-- Assessment: circle with diagonal line (from Archi AssessmentFigure.java) -->
       <symbol id="am-assessment" viewBox="0 0 16 16">
-        <rect x="7" y="0" width="2" height="16" fill="#555"/>
-        <rect x="3" y="13" width="10" height="2" fill="#555"/>
-        <path d="M1,4 h5 L3,9 Z"  fill="#555"/>
-        <path d="M10,4 h5 L13,9 Z" fill="#555"/>
-        <line x1="1" y1="4" x2="15" y2="4" stroke="#555" stroke-width="1.5"/>
+        <circle cx="8" cy="7" r="6" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="8" y1="13" x2="2" y2="15.5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
       </symbol>
 
-      <!-- Principle: scroll/document with ribbon bottom -->
+      <!-- Principle: rounded rect + two vertical parallel lines with gap (from Archi PrincipleFigure iconDelegate) -->
       <symbol id="am-principle" viewBox="0 0 16 16">
-        <path d="M2,0 h12 v13 Q8,17 2,13 Z" fill="#555"/>
-        <rect x="4" y="3"  width="8" height="1.5" fill="white" opacity="0.5"/>
-        <rect x="4" y="6"  width="8" height="1.5" fill="white" opacity="0.5"/>
-        <rect x="4" y="9"  width="5" height="1.5" fill="white" opacity="0.5"/>
+        <rect x="2" y="1" width="12" height="14" rx="3" ry="3" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="7"   y1="3"    x2="7"   y2="9"  stroke="#555" stroke-width="1.2"/>
+        <line x1="8.5" y1="3"    x2="8.5" y2="9"  stroke="#555" stroke-width="1.2"/>
+        <line x1="7"   y1="10.5" x2="7"   y2="13" stroke="#555" stroke-width="1.2"/>
+        <line x1="8.5" y1="10.5" x2="8.5" y2="13" stroke="#555" stroke-width="1.2"/>
       </symbol>
 
-      <!-- Requirement: rectangle with lines -->
+      <!-- Requirement: parallelogram (from Archi RequirementFigure.java — points 0,0/12,0/8,9/-4,9) -->
       <symbol id="am-requirement" viewBox="0 0 16 16">
-        <rect x="1" y="0" width="14" height="16" rx="1" fill="#555"/>
-        <rect x="3" y="4"  width="10" height="1.5" fill="white" opacity="0.6"/>
-        <rect x="3" y="7.5" width="10" height="1.5" fill="white" opacity="0.6"/>
-        <rect x="3" y="11" width="6"  height="1.5" fill="white" opacity="0.6"/>
+        <polygon points="4,2 15,2 11,14 0,14" fill="#555"/>
       </symbol>
 
-      <!-- Constraint: padlock -->
+      <!-- Constraint: same parallelogram + diagonal line (from Archi ConstraintFigure.java) -->
       <symbol id="am-constraint" viewBox="0 0 16 16">
-        <rect x="2" y="7" width="12" height="9" rx="1.5" fill="#555"/>
-        <path d="M5,7 Q5,1 8,1 Q11,1 11,7" fill="none" stroke="#555" stroke-width="2.5"/>
-        <circle cx="8" cy="12" r="1.5" fill="white"/>
-        <rect   x="7.2" y="12" width="1.6" height="2.5" fill="white"/>
+        <polygon points="4,2 15,2 11,14 0,14" fill="#555"/>
+        <line x1="4" y1="2" x2="11" y2="14" stroke="#aaa" stroke-width="1.5"/>
       </symbol>
 
-      <!-- Meaning: speech bubble -->
+      <!-- Meaning: cloud shape (cubic bezier, from Archi MeaningFigure.java) -->
       <symbol id="am-meaning" viewBox="0 0 16 16">
-        <path d="M1,0 h14 a1,1 0 0 1 1,1 v9 a1,1 0 0 1-1,1
-                 h-7 l-5,5 v-5 h-2 a1,1 0 0 1-1,-1 v-9 a1,1 0 0 1 1,-1 Z"
+        <path d="M4,13 C1,13 1,10.5 2,9.5 C1,9 1,7 3,7
+                 C3,4.5 5,3 7,3.5 C8,2 11,2 11.5,4.5
+                 C13.5,4.5 15,6 14,8
+                 C15.5,8.5 15.5,11 14,12
+                 C14.5,13.5 12,14 11,13 Z"
               fill="#555"/>
       </symbol>
 
-      <!-- Value: diamond -->
+      <!-- Value: oval/ellipse (from Archi ValueFigure.java) -->
       <symbol id="am-value" viewBox="0 0 16 16">
-        <polygon points="8,0 16,8 8,16 0,8" fill="#555"/>
+        <ellipse cx="8" cy="8" rx="7" ry="5" fill="#555"/>
       </symbol>
 
       <!-- ── Implementation & Migration ────────────────────────────────── -->
 
-      <!-- WorkPackage: document + checkmark -->
+      <!-- WorkPackage: open circle + line + filled arrowhead (from Archi WorkPackageFigure iconDelegate) -->
       <symbol id="am-workpackage" viewBox="0 0 16 16">
-        <path d="M0,0 h10 l6,6 v10 h-16 Z" fill="#555"/>
-        <path d="M10,0 v6 h6" fill="none" stroke="#888" stroke-width="1"/>
-        <path d="M3,9 L6,12 L13,5" fill="none" stroke="white"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4.5,10 A4.5,4.5 0 1 1 8.5,9.5" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="4.5" y1="10" x2="11" y2="10" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <polygon points="11,7 15,10 11,13" fill="#555"/>
       </symbol>
 
       <!-- Deliverable: document with arrow -->
@@ -264,48 +267,80 @@
               stroke-width="1.5" stroke-linecap="round"/>
       </symbol>
 
-      <!-- Gap: two zigzag rows -->
+      <!-- Gap: circle + two horizontal lines below (from Archi GapFigure.java) -->
       <symbol id="am-gap" viewBox="0 0 16 16">
-        <path d="M0,6 L3,3 L6,6 L9,3 L12,6 L15,3"
-              fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"/>
-        <path d="M0,12 L3,9 L6,12 L9,9 L12,12 L15,9"
-              fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="8" cy="5" r="4" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="1" y1="11" x2="15" y2="11" stroke="#555" stroke-width="1.5"/>
+        <line x1="1" y1="14.5" x2="15" y2="14.5" stroke="#555" stroke-width="1.5"/>
       </symbol>
 
-      <!-- Plateau: layered rectangles -->
+      <!-- Plateau: 3 staircase horizontal lines (from Archi PlateauFigure iconDelegate) -->
       <symbol id="am-plateau" viewBox="0 0 16 16">
-        <rect x="3" y="12" width="10" height="4" rx="0.5" fill="#555"/>
-        <rect x="5" y="7"  width="6"  height="4" rx="0.5" fill="#777"/>
-        <rect x="6" y="2"  width="4"  height="4" rx="0.5" fill="#999"/>
+        <line x1="0"  y1="13" x2="11" y2="13" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+        <line x1="2"  y1="10" x2="13" y2="10" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4"  y1="7"  x2="15" y2="7"  stroke="#555" stroke-width="2" stroke-linecap="round"/>
       </symbol>
 
       <!-- ── Strategy ───────────────────────────────────────────────────── -->
 
-      <!-- Resource: box with right-arrow inside -->
+      <!-- Resource: rounded rect + right nub + 3 vertical lines (from Archi ResourceFigure iconDelegate) -->
       <symbol id="am-resource" viewBox="0 0 16 16">
-        <rect x="0" y="0" width="16" height="16" rx="1.5" fill="#555"/>
-        <path d="M4,8 h7 M8,5 l3,3 l-3,3" fill="none" stroke="white"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="0" y="3" width="13" height="10" rx="2" fill="none" stroke="#555" stroke-width="1.5"/>
+        <rect x="13" y="6" width="3" height="4" rx="1" fill="none" stroke="#555" stroke-width="1.2"/>
+        <line x1="3.5" y1="5.5" x2="3.5" y2="10.5" stroke="#555" stroke-width="1.2"/>
+        <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" stroke="#555" stroke-width="1.2"/>
+        <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" stroke="#555" stroke-width="1.2"/>
       </symbol>
 
-      <!-- Capability: bullseye / concentric circles -->
+      <!-- Capability: staircase of 6 squares (lower-right triangle) from Archi CapabilityFigure.java -->
       <symbol id="am-capability" viewBox="0 0 16 16">
-        <path d="M8,1 a7,7 0 0 1 0,14 a7,7 0 0 1 0,-14 Z
-                 M8,4.5 a3.5,3.5 0 0 0 0,7 a3.5,3.5 0 0 0 0,-7 Z"
-              fill="#555" fill-rule="evenodd"/>
-        <circle cx="8" cy="8" r="1.5" fill="#555"/>
+        <rect x="10" y="2"  width="4" height="4" fill="#555"/>
+        <rect x="6"  y="6"  width="4" height="4" fill="#555"/>
+        <rect x="10" y="6"  width="4" height="4" fill="#555"/>
+        <rect x="2"  y="10" width="4" height="4" fill="#555"/>
+        <rect x="6"  y="10" width="4" height="4" fill="#555"/>
+        <rect x="10" y="10" width="4" height="4" fill="#555"/>
       </symbol>
 
-      <!-- CourseOfAction: curved path with arrowhead -->
+      <!-- CourseOfAction: 4-ring bullseye + shortcut glyph (from Archi CourseOfActionFigure iconDelegate) -->
       <symbol id="am-courseofaction" viewBox="0 0 16 16">
-        <path d="M2,14 Q2,3 9,3" fill="none" stroke="#555" stroke-width="2.5"
-              stroke-linecap="round"/>
-        <path d="M6,1 L11,3 L9,8" fill="#555"/>
+        <circle cx="9" cy="7" r="5"   fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="9" cy="7" r="3"   fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="9" cy="7" r="1.3" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="9" cy="7" r="0.5" fill="#555"/>
+        <path d="M1.5,14.5 A3.5,3.5 0 0 1 3.5,11" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+        <polygon points="1,10.5 4.5,12 3,15" fill="#555"/>
       </symbol>
 
       <!-- ValueStream: horizontal chevron/arrow band -->
       <symbol id="am-valuestream" viewBox="0 0 16 16">
         <path d="M0,4 h10 l6,4 l-6,4 h-10 l4,-4 Z" fill="#555"/>
+      </symbol>
+
+      <!-- Location: map pin / teardrop (from Archi LocationFigure.java) -->
+      <symbol id="am-location" viewBox="0 0 16 16">
+        <circle cx="8" cy="6" r="5" fill="#555"/>
+        <path d="M4.5,9.5 L8,15 L11.5,9.5" fill="#555"/>
+        <circle cx="8" cy="6" r="2" fill="white"/>
+      </symbol>
+
+      <!-- Grouping: small tab + wider body (from Archi GroupingFigure.java) -->
+      <symbol id="am-grouping" viewBox="0 0 16 16">
+        <rect x="0" y="2" width="7" height="4" fill="none" stroke="#555" stroke-width="1.5"/>
+        <rect x="0" y="6" width="14" height="8" fill="none" stroke="#555" stroke-width="1.5"/>
+      </symbol>
+
+      <!-- Junction: filled circle — AND junction (from Archi JunctionFigure.java) -->
+      <symbol id="am-junction" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="5" fill="#555"/>
+      </symbol>
+
+      <!-- DistributionNetwork: 2 parallel lines + chevrons on both ends (from Archi DistributionNetworkFigure iconDelegate) -->
+      <symbol id="am-distribution-network" viewBox="0 0 16 16">
+        <line x1="2" y1="6"  x2="14" y2="6"  stroke="#555" stroke-width="1.2"/>
+        <line x1="2" y1="10" x2="14" y2="10" stroke="#555" stroke-width="1.2"/>
+        <polyline points="5,3 1,8 5,13"  fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
+        <polyline points="11,3 15,8 11,13" fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
       </symbol>
 
     </defs>
