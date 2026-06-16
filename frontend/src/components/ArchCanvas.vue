@@ -738,6 +738,9 @@ function applyConnTypeToEdge(edge) {
   isDirty.value = true
 }
 
+// ── Auto-save layout on any change ────────────────────────────────────────────
+watch(isDirty, (dirty) => { if (dirty) saveLayout() })
+
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => store.selected, node => {
   if (node?.type === 'view') loadDiagram(node.id)
@@ -750,7 +753,16 @@ watch(() => store.activePaletteItem, item => {
     containerRef.value.style.cursor = item?.kind === 'conn' ? 'crosshair' : ''
 })
 
-function clearDiagram() {
+async function clearDiagram() {
+  if (currentViewId.value) {
+    try {
+      await fetch(`/api/diagram/${currentViewId.value}/save/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+        body: JSON.stringify({ view_id: currentViewId.value, nodes: [], user_edges: [] }),
+      })
+    } catch (e) { /* ignore */ }
+  }
   diagramData.value = null
   currentViewId.value = null
   isDirty.value = false

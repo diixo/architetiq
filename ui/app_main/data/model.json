@@ -8,188 +8,25 @@
       "name": "Strategy",
       "type": "node",
       "folder_type": "strategy",
-      "children": [
-        {
-          "id": "f709e1ea-a939-4b20-95c6-0227b7ff0713",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "2095a672-656b-4634-847b-d1dab1764004",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "8fd4fca8-676e-48f1-bd31-4967662a03b6",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "5d7b14e5-47cf-4b41-99ec-ee1a6a367f02",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "5b7cf098-bb8f-4d89-a777-c605974ace0f",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "b8bc0354-7015-41b1-99ba-5ccbd8812f7e",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "e3a88b0c-e4e3-420c-bec2-889adfc37d42",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "de74a7e2-c55d-48f0-a398-14e7cf7aec0e",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "3a27ccce-0047-4128-b5dc-0a696e0dea60",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "444fce3f-c191-4e10-9ffb-b26da06517c8",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "e182790a-ae68-4cf5-9728-834ca54a43d4",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "64ae84ee-80d6-4358-b83c-2af508090df0",
-          "name": "Value Stream",
-          "type": "element",
-          "element_type": "ValueStream",
-          "documentation": "",
-          "children": []
-        }
-      ]
+      "children": []
     },
     {
       "id": "00000000-0000-0000-0001-000000000002",
       "name": "Business",
       "type": "node",
       "folder_type": "business",
-      "children": [
-        {
-          "id": "94d6bd3d-e610-4baf-bcb0-b0907442741b",
-          "name": "Business Object",
-          "type": "element",
-          "element_type": "BusinessObject",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "64287c83-d164-4f3d-9bca-d5de7c5433a0",
-          "name": "Business Object",
-          "type": "element",
-          "element_type": "BusinessObject",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "611d7adc-121b-4703-9735-a1be6412521a",
-          "name": "Business Object",
-          "type": "element",
-          "element_type": "BusinessObject",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "3dc0f074-3f17-46bf-8cc0-e376a1204c91",
-          "name": "Business Function",
-          "type": "element",
-          "element_type": "BusinessFunction",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "436319cb-b536-4020-aa4d-f37c146bae42",
-          "name": "Product",
-          "type": "element",
-          "element_type": "Product",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "6c6acd96-1e0a-4aa8-843c-f98c0251f67c",
-          "name": "Business Actor",
-          "type": "element",
-          "element_type": "BusinessActor",
-          "documentation": "",
-          "children": []
-        },
-        {
-          "id": "43eb7254-b38d-44b9-b686-3e1bae8cbfa3",
-          "name": "Business Actor",
-          "type": "element",
-          "element_type": "BusinessActor",
-          "documentation": "",
-          "children": []
-        }
-      ]
+      "children": []
     },
     {
       "id": "00000000-0000-0000-0001-000000000003",
       "name": "Application",
       "type": "node",
       "folder_type": "application",
-      "children": [
-        {
-          "id": "7d235b26-6ea0-4299-b518-bed8d1a8fa3b",
-          "name": "Application Component",
-          "type": "element",
-          "element_type": "ApplicationComponent",
-          "documentation": "",
-          "children": []
-        }
-      ]
+      "children": []
     },
     {
       "id": "00000000-0000-0000-0001-000000000004",
-      "name": "Technology And Physical",
+      "name": "Technology & Physical",
       "type": "node",
       "folder_type": "technology",
       "children": []
@@ -203,7 +40,7 @@
     },
     {
       "id": "00000000-0000-0000-0001-000000000006",
-      "name": "Implementation and Migration",
+      "name": "Implementation & Migration",
       "type": "node",
       "folder_type": "implementation_migration",
       "children": []
