@@ -128,6 +128,7 @@ function onCtxProperties() {
   } else if (cell?.isEdge()) {
     selectEdge(cell)
   }
+  store.propertiesPanelVisible = true
   hideCtxMenu()
 }
 function onCtxDelete() {

@@ -332,10 +332,13 @@
 
     <input type="file" id="archimate-file-input" accept=".archimate,.xml" style="display:none">
     <script>
-      document.getElementById('menu-open').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('archimate-file-input').click();
-      });
+      var menuOpenBtn = document.getElementById('menu-open');
+      if (menuOpenBtn) {
+        menuOpenBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          document.getElementById('archimate-file-input').click();
+        });
+      }
 
       document.getElementById('archimate-file-input').addEventListener('change', function() {
         var file = this.files[0];

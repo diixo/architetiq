@@ -9,6 +9,7 @@ export const useModelStore = defineStore('model', () => {
   const filterQuery = ref('')
   const editingNodeId = ref(null)
   const activeConnType  = ref('AssociationRelationship')
+  const propertiesPanelVisible = ref(false)
   const pendingOpenId   = ref(null)  // folder to expand before editing new child
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
@@ -33,6 +34,18 @@ export const useModelStore = defineStore('model', () => {
   function renameNode(id, newName) {
     const node = findById(id)
     if (node && newName.trim()) node.name = newName.trim()
+    saveModel()
+  }
+
+  function updateDocumentation(id, doc) {
+    const node = findById(id)
+    if (node) node.documentation = doc
+    saveModel()
+  }
+
+  function updateProperties(id, props) {
+    const node = findById(id)
+    if (node) node.properties = props
     saveModel()
   }
 
@@ -248,5 +261,7 @@ export const useModelStore = defineStore('model', () => {
     activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
     pendingOpenId,
     loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement, addView,
+    updateDocumentation, updateProperties,
+    propertiesPanelVisible,
   }
 })

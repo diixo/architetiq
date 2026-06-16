@@ -99,13 +99,15 @@
         <div class="panel root-panel flex-grow-1 overflow-hidden d-flex flex-column">
           <ModelTree />
         </div>
-        <PropertiesPanel />
       </div>
 
-      <!-- Canvas area + Palette -->
-      <div class="flex-grow-1 d-flex overflow-hidden">
-        <ArchCanvas ref="canvasRef" class="flex-grow-1" />
-        <CanvasPalette />
+      <!-- Canvas area + Palette + Properties -->
+      <div class="flex-grow-1 overflow-hidden" style="display: grid; grid-template-rows: 1fr auto; min-height: 0;">
+        <div class="d-flex overflow-hidden" style="min-height: 0;">
+          <ArchCanvas ref="canvasRef" class="flex-grow-1" />
+          <CanvasPalette />
+        </div>
+        <PropertiesPanel v-if="store.propertiesPanelVisible" @close="store.propertiesPanelVisible = false" />
       </div>
 
     </main>
