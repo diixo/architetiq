@@ -892,13 +892,30 @@ def _layout_path(view_id):
     return os.path.join(_DIAGRAMS_DIR, f"{view_id}.json")
 
 
+def _find_view_by_id(node, target_id):
+    """Recursively find a node of type 'view' by id."""
+    if node.get('type') == 'view' and node.get('id') == target_id:
+        return node
+    for child in node.get('children', []):
+        found = _find_view_by_id(child, target_id)
+        if found:
+            return found
+    return None
+
+
 def api_diagram(request, view_id):
     # 1. Pre-parsed diagram file (native .archimate uploaded, or previously saved canvas)
     diag_path = _layout_path(view_id)
     if os.path.isfile(diag_path):
         try:
             with open(diag_path, encoding='utf-8') as f:
-                return JsonResponse(json.load(f))
+                data = json.load(f)
+            if not data.get('name'):
+                model = _load_model()
+                node = _find_view_by_id(model, view_id)
+                if node:
+                    data['name'] = node.get('name', '')
+            return JsonResponse(data)
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -916,16 +933,8 @@ def api_diagram(request, view_id):
             return JsonResponse({'error': str(e)}, status=500)
 
     # 3. Empty canvas for user-created views
-    def find_node(node, tid):
-        if node.get('id') == tid:
-            return node
-        for child in node.get('children', []):
-            found = find_node(child, tid)
-            if found:
-                return found
-        return None
 
-    node = find_node(model, view_id)
+    node = _find_view_by_id(model, view_id)
     if node is None:
         return JsonResponse({'error': 'Not found'}, status=404)
     return JsonResponse({

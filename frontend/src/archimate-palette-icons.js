@@ -6,7 +6,7 @@ const BASE = import.meta.env.BASE_URL + 'archimate-icons/'
 export const PALETTE_ICON = {
   // ── Business ───────────────────────────────────────────────────────────────
   BusinessActor:         BASE + 'business-actor.png',
-  BusinessRole:          BASE + 'actor.png',
+  BusinessRole:          BASE + 'business-role.png',
   BusinessCollaboration: BASE + 'business-collaboration.png',
   BusinessInterface:     BASE + 'business-interface.png',
   BusinessProcess:       BASE + 'business-process.png',
