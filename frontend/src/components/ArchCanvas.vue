@@ -17,8 +17,14 @@
         <button class="btn btn-sm btn-light border py-0 px-1" title="Fit" @click="fitView">
           <i class="bi bi-fullscreen" style="font-size:0.75rem;"></i>
         </button>
-        <button class="btn btn-sm btn-light border py-0 px-1" title="Reset zoom" @click="resetZoom">
+        <button class="btn btn-sm btn-light border py-0 px-1" title="Zoom in" @click="zoomIn">
+          <i class="bi bi-zoom-in" style="font-size:0.75rem;"></i>
+        </button>
+        <button class="btn btn-sm btn-light border py-0 px-1" title="Zoom out" @click="zoomOut">
           <i class="bi bi-zoom-out" style="font-size:0.75rem;"></i>
+        </button>
+        <button class="btn btn-sm btn-light border py-0 px-1" title="Reset zoom (100%)" @click="resetZoom">
+          <i class="bi bi-aspect-ratio" style="font-size:0.75rem;"></i>
         </button>
       </div>
     </div>
@@ -29,7 +35,9 @@
       @dragover.prevent
       @drop="onDrop"
     >
-      <div ref="containerRef" class="w-100 h-100"></div>
+      <div ref="scrollWrapRef" style="position:absolute;inset:0;overflow:auto;">
+        <div ref="containerRef"></div>
+      </div>
       <div
         v-if="!diagramData && !loading"
         class="position-absolute top-50 start-50 translate-middle text-center text-muted"
@@ -102,6 +110,7 @@ function _addHandles(node) {
 
 const store            = useModelStore()
 const containerRef     = ref(null)
+const scrollWrapRef    = ref(null)
 const diagramData      = ref(null)
 const loading          = ref(false)
 const isDirty          = ref(false)
@@ -364,6 +373,22 @@ function labelColor(bgHex) {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 128 ? '#333' : '#fff'
 }
 
+// ── Scroll / resize ───────────────────────────────────────────────────────────
+function _resizeGraph() {
+  if (!graph || !scrollWrapRef.value) return
+  const wrap = scrollWrapRef.value
+  const vw = wrap.clientWidth
+  const vh = wrap.clientHeight
+  const bbox = graph.getContentBBox()
+  if (!bbox || bbox.width === 0) { graph.resize(vw, vh); return }
+  const zoom = graph.zoom()
+  const { tx, ty } = graph.translate()
+  const pad = 40
+  const gw = Math.max(vw, Math.ceil((bbox.x + bbox.width)  * zoom + tx) + pad)
+  const gh = Math.max(vh, Math.ceil((bbox.y + bbox.height) * zoom + ty) + pad)
+  graph.resize(gw, gh)
+}
+
 // ── Graph init ────────────────────────────────────────────────────────────────
 function initGraph() {
   if (!containerRef.value) return
@@ -424,12 +449,10 @@ function initGraph() {
     if (!edge.getData()?.isLoaded) isDirty.value = true
   })
   graph.on('edge:change:vertices', () => { isDirty.value = true })
+  graph.on('scale', () => { _resizeGraph() })
 
-  resizeObserver = new ResizeObserver(() => {
-    if (containerRef.value)
-      graph.resize(containerRef.value.clientWidth, containerRef.value.clientHeight)
-  })
-  resizeObserver.observe(containerRef.value)
+  resizeObserver = new ResizeObserver(() => { _resizeGraph() })
+  resizeObserver.observe(scrollWrapRef.value)
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -609,6 +632,7 @@ function renderDiagram() {
   }
 
   graph.zoomToFit({ padding: 24, maxScale: 1 })
+  _resizeGraph()
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -676,8 +700,21 @@ async function loadDiagram(viewId) {
   }
 }
 
-function fitView()   { graph?.zoomToFit({ padding: 24 }) }
-function resetZoom() { graph?.zoomTo(1); graph?.centerContent() }
+function zoomIn()  { graph?.zoom(0.2) }
+function zoomOut() { graph?.zoom(-0.2) }
+function fitView() {
+  if (!graph) return
+  graph.zoomToFit({ padding: 24 })
+  if (scrollWrapRef.value) { scrollWrapRef.value.scrollLeft = 0; scrollWrapRef.value.scrollTop = 0 }
+  _resizeGraph()
+}
+function resetZoom() {
+  if (!graph) return
+  graph.zoomTo(1)
+  graph.translate(0, 0)
+  if (scrollWrapRef.value) { scrollWrapRef.value.scrollLeft = 0; scrollWrapRef.value.scrollTop = 0 }
+  _resizeGraph()
+}
 
 // ── Drag-and-drop from palette ────────────────────────────────────────────────
 function onDrop(e) {
