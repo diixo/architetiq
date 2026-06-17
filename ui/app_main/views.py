@@ -335,6 +335,14 @@ def api_model_new(request):
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
     with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
         json.dump(_DEFAULT_MODEL, f, ensure_ascii=False, indent=2)
+    # Clear all saved diagram layouts so stale data from a previous project doesn't bleed in
+    if os.path.isdir(_DIAGRAMS_DIR):
+        for fname in os.listdir(_DIAGRAMS_DIR):
+            if fname.endswith('.json'):
+                try:
+                    os.remove(os.path.join(_DIAGRAMS_DIR, fname))
+                except OSError:
+                    pass
     return JsonResponse({'ok': True})
 
 
@@ -887,6 +895,13 @@ def _parse_native_diagram(view_elem, elements_index):
 def _parse_and_save_all_diagrams(xml_root, elements_index):
     """Parse every diagram view in a native .archimate root; save each to data/diagrams/<id>.json."""
     os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
+    # Clear stale diagrams from any previous project before writing new ones
+    for fname in os.listdir(_DIAGRAMS_DIR):
+        if fname.endswith('.json'):
+            try:
+                os.remove(os.path.join(_DIAGRAMS_DIR, fname))
+            except OSError:
+                pass
     for elem in xml_root.iter():
         et = _el_type(elem.get(_XSI_TYPE, ''))
         if et in _VIEW_TYPES:

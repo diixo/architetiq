@@ -112,19 +112,43 @@ class ApiModelTests(TestCase):
                                  content_type='application/json')
         self.assertEqual(r.status_code, 400)
 
-    def test_new_does_not_overwrite_disk(self):
-        """New — это клиентская операция: сервер не имеет /api/model/new/."""
+    def test_new_resets_model_to_default(self):
+        """POST /api/model/new/ перезаписывает model.json дефолтной моделью."""
         payload = {'name': 'Precious ASPICE', 'type': 'model', 'children': []}
         with self._patch():
             self.client.post('/api/model/save/', json.dumps(payload),
                              content_type='application/json')
-            # /api/model/new/ не существует — сервер возвращает 404
             r = self.client.post('/api/model/new/')
-        self.assertEqual(r.status_code, 404)
-        # model.json на диске не тронут
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['ok'])
         with open(self._model_file) as f:
             on_disk = json.load(f)
-        self.assertEqual(on_disk['name'], 'Precious ASPICE')
+        self.assertEqual(on_disk['name'], _DEFAULT_MODEL['name'])
+
+    def test_new_returns_405_on_get(self):
+        """GET /api/model/new/ возвращает 405."""
+        with self._patch():
+            r = self.client.get('/api/model/new/')
+        self.assertEqual(r.status_code, 405)
+
+    def test_new_clears_diagrams_dir(self):
+        """POST /api/model/new/ удаляет все .json из _DIAGRAMS_DIR."""
+        tmpdir = tempfile.mkdtemp()
+        diagrams_dir = os.path.join(tmpdir, 'diagrams')
+        os.makedirs(diagrams_dir)
+        # Write two fake diagram files
+        for name in ('v1.json', 'v2.json'):
+            with open(os.path.join(diagrams_dir, name), 'w') as f:
+                json.dump({'id': name}, f)
+        model_file = os.path.join(tmpdir, 'model.json')
+        with patch.multiple('app_main.views',
+                            _MODEL_FILE=model_file,
+                            _DIAGRAMS_DIR=diagrams_dir,
+                            _GRAFICO_DIR='/nonexistent'):
+            r = self.client.post('/api/model/new/')
+        self.assertEqual(r.status_code, 200)
+        remaining = [f for f in os.listdir(diagrams_dir) if f.endswith('.json')]
+        self.assertEqual(remaining, [], "Diagram files were not cleared by /api/model/new/")
 
     # ── GET /api/model/export/ ────────────────────────────────────────────────
 
@@ -239,9 +263,9 @@ class FolderTypeTests(TestCase):
             'Strategy': 'strategy',
             'Business': 'business',
             'Application': 'application',
-            'Technology And Physical': 'technology',
+            'Technology & Physical': 'technology',
             'Motivation': 'motivation',
-            'Implementation and Migration': 'implementation_migration',
+            'Implementation & Migration': 'implementation_migration',
             'Other': 'other',
             'Relations': 'relations',
             'Views': 'diagrams',

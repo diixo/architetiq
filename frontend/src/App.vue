@@ -158,9 +158,13 @@ function triggerOpen() {
 
 async function onNew() {
   if (!confirm('Reset to a new empty model? Unsaved changes will be lost.')) return
-  store.resetModel()
+  const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/)
+  const csrfToken = csrfMatch ? csrfMatch[1] : ''
+  await fetch('/api/model/new/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+  store.selected = null
+  store.filterQuery = ''
   canvasRef.value?.clearDiagram()
-  await store.saveModel()
+  await store.fetchModel()
   showToast('New model created')
 }
 
