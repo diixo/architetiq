@@ -273,13 +273,10 @@
         <polygon points="11,7 15,10 11,13" fill="#555" stroke="none"/>
       </symbol>
 
-      <!-- Deliverable: document with arrow -->
+      <!-- Deliverable: rect with wavy bottom — mini getFigurePath(1.5, 14×10) (DeliverableFigure.drawIcon) -->
       <symbol id="am-deliverable" viewBox="0 0 16 16">
-        <path d="M0,0 h10 l6,6 v10 h-16 Z"
+        <path d="M 1,1 L 1,8.5 Q 4.5,12.5 9,9.5 Q 11.5,7 15,9.5 L 15,1 Z"
               fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
-        <polyline points="10,0 10,6 16,6" fill="none" stroke="#555" stroke-width="1"/>
-        <path d="M4,9 h6 M8,7 l2,2 l-2,2"
-              fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
       </symbol>
 
       <!-- Gap: circle with two horizontal lines through it (from Archi GapFigure.java) -->
