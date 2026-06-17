@@ -317,11 +317,6 @@ function getElementPath(et, w, h) {
   }
 }
 
-// Passive structure elements — dashed border in ArchiMate notation
-const PASSIVE_TYPES = new Set([
-  'BusinessObject','Contract','Representation','Product',
-  'DataObject','Artifact','Material','Equipment','Facility',
-])
 
 const ELEMENT_MARKUP = [
   { tagName: 'path', selector: 'body' },
@@ -474,7 +469,6 @@ function renderDiagram() {
     } else if (n.type === 'element') {
       const zIdx     = n.parent_id ? 2 : 1
       const iconId   = ELEMENT_ICON[n.element_type]
-      const dashed   = PASSIVE_TYPES.has(n.element_type)
       const iconSize = 13
       const shape    = SHAPE_TYPE[n.element_type] || 'rect'
       const bodyPath = getElementPath(n.element_type, n.width, n.height)
@@ -491,7 +485,6 @@ function renderDiagram() {
           body: {
             d: bodyPath, fill: nodeColor(n.element_type),
             stroke: '#888', strokeWidth: 1, magnet: true,
-            ...(dashed ? { strokeDasharray: '5 3' } : {}),
           },
           label: {
             text: n.name, fontSize: 10, fill: '#222',
