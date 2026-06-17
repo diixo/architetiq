@@ -86,6 +86,7 @@ export const PALETTE_ICON = {
   SpecializationRelationship: BASE + 'specialization.png',
   Junction:                   BASE + 'and-junction.png',
   // ── View extras ───────────────────────────────────────────────────────────
+  Connection:            BASE + 'connection-plain.png',
   Note:                  BASE + 'note.png',
   DiagramGroup:          BASE + 'diagram-group.png',
   ArchimateDiagramModel: BASE + 'diagram.png',

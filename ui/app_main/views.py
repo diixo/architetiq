@@ -429,7 +429,8 @@ def _add_source_connection(src_xml, edge, rel_id, XSI):
     conn.set('id', edge.get('id', ''))
     conn.set('source', edge.get('source_cell', ''))
     conn.set('target', edge.get('target_cell', ''))
-    conn.set('archimateRelationship', rel_id)
+    if rel_id:
+        conn.set('archimateRelationship', rel_id)
     for v in edge.get('vertices', []):
         bp = ET.SubElement(conn, 'bendpoint')
         bp.set('startX', str(int(v.get('x', 0))))
@@ -489,12 +490,17 @@ def _build_archimate_xml(model):
     for vid, diag in diagrams.items():
         pairs = []
         for edge in diag.get('user_edges', []):
-            rel_id = str(_uuid.uuid4())
-            pairs.append((edge, rel_id))
-            src_eid = node_to_elem.get(edge.get('source_cell', ''), '')
-            tgt_eid = node_to_elem.get(edge.get('target_cell', ''), '')
-            if src_eid and tgt_eid:
-                new_relations.append((rel_id, edge.get('type', 'AssociationRelationship'), src_eid, tgt_eid))
+            edge_type = edge.get('type', 'AssociationRelationship')
+            # Generic Connection has no ArchiMate relationship in the model
+            if edge_type == 'Connection':
+                pairs.append((edge, ''))
+            else:
+                rel_id = str(_uuid.uuid4())
+                pairs.append((edge, rel_id))
+                src_eid = node_to_elem.get(edge.get('source_cell', ''), '')
+                tgt_eid = node_to_elem.get(edge.get('target_cell', ''), '')
+                if src_eid and tgt_eid:
+                    new_relations.append((rel_id, edge_type, src_eid, tgt_eid))
         if pairs:
             user_edges_by_view[vid] = pairs
 
@@ -771,9 +777,11 @@ def _parse_native_diagram(view_elem, elements_index):
             if stag == 'sourceConnection':
                 rel_id = sub.get('archimateRelationship', '')
                 rel_info = elements_index.get(rel_id, {})
+                # No archimateRelationship → generic DiagramModelConnection
+                edge_type = rel_info.get('element_type', '') if rel_id else 'Connection'
                 edges.append({
                     'id':          sub.get('id', ''),
-                    'type':        rel_info.get('element_type', ''),
+                    'type':        edge_type,
                     'source':      sub.get('source', oid),
                     'target':      sub.get('target', ''),
                     'relation_id': rel_id,

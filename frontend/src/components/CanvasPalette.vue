@@ -32,10 +32,10 @@
               'palette-icon-relation': true,
               'palette-icon-active': store.activePaletteItem?.value === et,
             }"
-            :draggable="!layer.isRelations"
+            :draggable="!layer.isRelations && !layer.connTypes?.has(et)"
             :title="humanizeType(et)"
-            @click="store.selectPaletteItem(layer.isRelations ? 'conn' : 'elem', et)"
-            @dragstart="!layer.isRelations && onDragStart($event, et, layer.folder_type)"
+            @click="store.selectPaletteItem((layer.isRelations || layer.connTypes?.has(et)) ? 'conn' : 'elem', et)"
+            @dragstart="!layer.isRelations && !layer.connTypes?.has(et) && onDragStart($event, et, layer.folder_type)"
           >
             <img
               v-if="PALETTE_ICON[et]"
@@ -94,7 +94,7 @@ const LAYERS = reactive([
   // 1. Relations
   { folder_type: 'relations', label: 'Relations',       open: true, types: REL_TYPES_PALETTE, isRelations: true },
   // 2. View extras
-  { folder_type: 'diagrams',  label: 'View',            open: true, types: ['Note','DiagramGroup'] },
+  { folder_type: 'diagrams',  label: 'View',            open: true, types: ['Note','DiagramGroup','Connection'], connTypes: new Set(['Connection']) },
   // 3–10. ArchiMate layers
   { folder_type: 'other',       label: 'Other',         open: true, types: ['Location','Grouping'] },
   { folder_type: 'strategy',    label: 'Strategy',      open: true, types: ['Resource','Capability','ValueStream','CourseOfAction'] },

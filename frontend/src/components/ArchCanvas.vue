@@ -243,6 +243,7 @@ const MK_NONE      = null
 
 // ── ArchiMate relationship → line style ──────────────────────────────────────
 const REL_STYLE = {
+  Connection:                 { stroke: '#000', strokeWidth: 1,   dash: '',    src: MK_NONE,     tgt: MK_NONE    },
   CompositionRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_FILL_DIA, tgt: MK_NONE    },
   AggregationRelationship:    { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_OPEN_DIA, tgt: MK_NONE    },
   AssignmentRelationship:     { stroke: '#444', strokeWidth: 1.5, dash: '',    src: MK_CIRCLE,   tgt: MK_FILL_TRI },
