@@ -89,5 +89,5 @@ export const ELEMENT_ICON = {
   Junction:                   'am-junction',
   // View extras
   Note:           'am-meaning',
-  DiagramGroup:   'am-capability',
+  // DiagramGroup has no corner icon in Archi (uses image icon system)
 }

@@ -28,7 +28,7 @@ export const LAYER_COLOR = {
   // Strategy (pale tan  #f5deaa)
   Resource:'#f5deaa', Capability:'#f5deaa', CourseOfAction:'#f5deaa', ValueStream:'#f5deaa',
   // Other
-  Location:'#ffffff', Grouping:'#ffffff',
+  Location:'#edcfe2', Grouping:'#ffffff',
   // Physical
   DistributionNetwork:'#b5ffb5',
   // Relations (light gray background)
@@ -39,7 +39,7 @@ export const LAYER_COLOR = {
   TriggeringRelationship:'#f8f9fa', FlowRelationship:'#f8f9fa',
   SpecializationRelationship:'#f8f9fa', Junction:'#f8f9fa',
   // View extras
-  Note:'#fffde7', DiagramGroup:'#e3f2fd',
+  Note:'#fffde7', DiagramGroup:'#d2d7d7',
 }
 
 export function nodeColor(elementType) {
