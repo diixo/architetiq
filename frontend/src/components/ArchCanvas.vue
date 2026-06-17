@@ -63,36 +63,42 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Graph, ToolItem } from '@antv/x6'
+import { Graph } from '@antv/x6'
 import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
 
-// ── Node selection handles tool (Archi-style: 8 squares at corners + midpoints) ──
 const _NHP = [[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]
-const _NHS = 6, _NHH = 3
-class _NodeSelectionHandles extends ToolItem {
-  onRender() { this.update() }
-  update() {
-    while (this.container.firstChild) this.container.removeChild(this.container.firstChild)
-    const { width, height } = this.cell.getSize()
-    _NHP.forEach(([rx, ry]) => {
-      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-      r.setAttribute('x', String(rx * width - _NHH))
-      r.setAttribute('y', String(ry * height - _NHH))
-      r.setAttribute('width', String(_NHS))
-      r.setAttribute('height', String(_NHS))
-      r.setAttribute('fill', '#fff')
-      r.setAttribute('stroke', '#0d6efd')
-      r.setAttribute('stroke-width', '1.5')
-      r.setAttribute('pointer-events', 'none')
-      this.container.appendChild(r)
-    })
-    return this
-  }
+const _NHS = 7, _NHH = 3.5
+let _selHandlesEl = null
+
+function _removeHandles() {
+  if (_selHandlesEl) { _selHandlesEl.remove(); _selHandlesEl = null }
 }
-Graph.registerNodeTool('node-selection-handles', _NodeSelectionHandles, true)
+
+function _addHandles(node) {
+  _removeHandles()
+  const view = graph?.findViewByCell(node)
+  if (!view) return
+  const { width, height } = node.getSize()
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  _NHP.forEach(([rx, ry]) => {
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    r.setAttribute('x', String(rx * width - _NHH))
+    r.setAttribute('y', String(ry * height - _NHH))
+    r.setAttribute('width',  String(_NHS))
+    r.setAttribute('height', String(_NHS))
+    r.setAttribute('fill', '#0d6efd')
+    r.setAttribute('stroke', '#fff')
+    r.setAttribute('stroke-width', '1')
+    r.setAttribute('pointer-events', 'none')
+    g.appendChild(r)
+  })
+  const container = view.container ?? view.el
+  container.appendChild(g)
+  _selHandlesEl = g
+}
 
 const store            = useModelStore()
 const containerRef     = ref(null)
@@ -143,6 +149,10 @@ function onCtxOutside(e) {
 }
 
 // ── Node selection ────────────────────────────────────────────────────────────
+function _strokeSel(node) {
+  return node?.getData?.()?.type === 'group' ? 'outline' : 'body'
+}
+
 function _nodeDefaultStroke(d) {
   if (d?.type === 'group') return '#999'
   if (d?.type === 'note')  return '#ccc'
@@ -152,9 +162,10 @@ function _nodeDefaultStroke(d) {
 
 function deselectNode() {
   if (!selectedCanvasCell?.isNode?.()) return
-  selectedCanvasCell.attr('body/stroke', _nodeDefaultStroke(selectedCanvasCell.getData()))
-  selectedCanvasCell.attr('body/strokeWidth', 1)
-  selectedCanvasCell.removeTools()
+  const sel = _strokeSel(selectedCanvasCell)
+  selectedCanvasCell.attr(`${sel}/stroke`, _nodeDefaultStroke(selectedCanvasCell.getData()))
+  selectedCanvasCell.attr(`${sel}/strokeWidth`, 1)
+  _removeHandles()
 }
 
 function selectNode(node) {
@@ -162,9 +173,10 @@ function selectNode(node) {
   deselectEdge()
   deselectNode()
   selectedCanvasCell = node
-  node.attr('body/stroke', '#0d6efd')
-  node.attr('body/strokeWidth', 2)
-  node.addTools({ local: true, items: [{ name: 'node-selection-handles' }] })
+  const sel = _strokeSel(node)
+  node.attr(`${sel}/stroke`, '#0d6efd')
+  node.attr(`${sel}/strokeWidth`, 2)
+  _addHandles(node)
 }
 
 // ── Edge selection ────────────────────────────────────────────────────────────
@@ -286,8 +298,6 @@ const SHAPE_TYPE = {
   // Passive structure: folded top-right corner (standard ArchiMate notation)
   BusinessObject:'passive', DataObject:'passive', Artifact:'passive',
   Contract:'passive', Representation:'passive', Material:'passive',
-  // ApplicationComponent: rect with two nubs on left (standard IT notation)
-  ApplicationComponent:'component',
 }
 
 function roundedRect(w, h, r = 3) {
@@ -299,15 +309,8 @@ function getElementPath(et, w, h) {
   const s = SHAPE_TYPE[et] || 'rect'
   switch (s) {
     case 'passive': {
-      // Folded top-right corner (ArchiMate passive structure notation)
       const f = Math.min(w * 0.18, h * 0.28, 12)
       return `M 0,0 H ${w-f} L ${w},${f} V ${h} H 0 Z`
-    }
-    case 'component': {
-      // ApplicationComponent: rect with two nubs on left side
-      const nb = Math.min(w * 0.12, 12), nh = Math.min(h * 0.22, 12)
-      const g1 = h * 0.2, g2 = h * 0.52
-      return `M ${nb},0 H ${w} V ${h} H ${nb} V ${g2+nh} H 0 V ${g2} H ${nb} V ${g1+nh} H 0 V ${g1} H ${nb} Z`
     }
     default:
       return roundedRect(w, h, 3)
@@ -321,7 +324,7 @@ const PASSIVE_TYPES = new Set([
 ])
 
 const ELEMENT_MARKUP = [
-  { tagName: 'path', selector: 'body' },   // path instead of rect for custom shapes
+  { tagName: 'path', selector: 'body' },
   { tagName: 'text', selector: 'label' },
   { tagName: 'use',  selector: 'icon' },
 ]
@@ -432,92 +435,72 @@ function renderDiagram() {
     const wrap = { width: n.width - 8, height: n.height - 6, ellipsis: true }
 
     if (n.type === 'group') {
+      const fillColor = n.fill_color || '#f0f0f0'
+      const tabW = Math.floor(n.width / 2)
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 0,
         markup: [
-          { tagName: 'rect', selector: 'body' },
-          { tagName: 'rect', selector: 'tab'  },
-          { tagName: 'text', selector: 'label' },
+          { tagName: 'rect',  selector: 'body_fill' },
+          { tagName: 'rect',  selector: 'tab_fill'  },
+          { tagName: 'path',  selector: 'outline'   },
+          { tagName: 'text',  selector: 'label'     },
         ],
         data: { type: 'group', name: n.name, id: n.id },
         attrs: {
-          body: {
-            x: 0, y: TAB_H,
-            width: n.width,
-            height: Math.max(0, n.height - TAB_H),
-            fill: n.fill_color || '#f0f0f0',
-            stroke: '#999', strokeWidth: 1,
+          body_fill: {
+            x: 0, y: TAB_H, width: n.width, height: Math.max(0, n.height - TAB_H),
+            fill: fillColor, stroke: 'none',
           },
-          tab: {
-            x: 0, y: 0,
-            width: Math.floor(n.width / 2),
-            height: TAB_H,
-            fill: darkenColor(n.fill_color || '#f0f0f0'),
-            stroke: '#999', strokeWidth: 1,
+          tab_fill: {
+            x: 0, y: 0, width: tabW, height: TAB_H,
+            fill: darkenColor(fillColor), stroke: 'none',
+          },
+          outline: {
+            d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} H ${n.width} V ${n.height} H 0 Z`,
+            fill: 'none', stroke: '#999', strokeWidth: 1,
           },
           label: {
             text: n.name,
-            x: Math.floor(n.width / 4),
-            y: TAB_H / 2,
-            textAnchor: 'middle',
+            x: 6, y: TAB_H / 2,
+            textAnchor: 'start',
             textVerticalAnchor: 'middle',
             fontSize: 11, fontWeight: 600,
-            fill: labelColor(n.fill_color || '#f0f0f0'),
-            textWrap: {
-              text: n.name,
-              width: Math.floor(n.width / 2) - 8,
-              ellipsis: true,
-            },
+            fill: labelColor(fillColor),
+            textWrap: { text: n.name, width: tabW - 12, ellipsis: true },
           },
         },
       })
     } else if (n.type === 'element') {
-      const iconId  = ELEMENT_ICON[n.element_type]
-      const dashed  = PASSIVE_TYPES.has(n.element_type)
+      const zIdx     = n.parent_id ? 2 : 1
+      const iconId   = ELEMENT_ICON[n.element_type]
+      const dashed   = PASSIVE_TYPES.has(n.element_type)
       const iconSize = 13
-      const zIdx    = n.parent_id ? 2 : 1
       const shape    = SHAPE_TYPE[n.element_type] || 'rect'
       const bodyPath = getElementPath(n.element_type, n.width, n.height)
-
-      // Shift label/icon for shapes with non-rectangular areas
-      const nubOffset  = (shape === 'component') ? Math.min(n.width * 0.12, 12) : 0
-      const foldOffset = (shape === 'passive')   ? Math.min(n.width * 0.18, n.height * 0.28, 12) : 0
-
-      const textAreaW = n.width - nubOffset - (iconId ? iconSize + 6 : 8)
-      const iconX     = n.width - iconSize - 2
-      const iconY     = (shape === 'passive') ? foldOffset + 2 : 2
-      const labelCX   = (shape === 'component')
-        ? `${Math.round(nubOffset + (n.width - nubOffset) / 2)}`
-        : '50%'
+      const foldOffset = (shape === 'passive') ? Math.min(n.width * 0.18, n.height * 0.28, 12) : 0
+      const iconX    = n.width - iconSize - 2
+      const iconY    = (shape === 'passive') ? foldOffset + 2 : 2
+      const textAreaW = n.width - (iconId ? iconSize + 6 : 8)
 
       graph.addNode({
-        id: n.id,
-        x: n.x, y: n.y,
-        width: n.width, height: n.height,
-        zIndex: zIdx,
-        markup: ELEMENT_MARKUP,
-        data: { type: 'element', element_id: n.element_id,
-                element_type: n.element_type, name: n.name, id: n.element_id },
+        id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
+        zIndex: zIdx, markup: ELEMENT_MARKUP,
+        data: { type: 'element', element_id: n.element_id, element_type: n.element_type, name: n.name, id: n.element_id },
         attrs: {
           body: {
-            d: bodyPath,
-            fill: nodeColor(n.element_type),
-            stroke: '#888', strokeWidth: 1,
-            magnet: true,
+            d: bodyPath, fill: nodeColor(n.element_type),
+            stroke: '#888', strokeWidth: 1, magnet: true,
             ...(dashed ? { strokeDasharray: '5 3' } : {}),
           },
           label: {
-            text: n.name,
-            fontSize: 10, fill: '#222',
-            refX: labelCX, refY: '50%',
+            text: n.name, fontSize: 10, fill: '#222',
+            refX: '50%', refY: '50%',
             textAnchor: 'middle', textVerticalAnchor: 'middle',
             textWrap: { text: n.name, width: textAreaW, height: n.height - 8, ellipsis: true },
           },
           icon: iconId && iconX > 0 ? {
-            href: `#${iconId}`,
-            x: iconX, y: iconY,
-            width: iconSize, height: iconSize,
+            href: `#${iconId}`, x: iconX, y: iconY, width: iconSize, height: iconSize,
           } : { width: 0, height: 0 },
         },
       })
@@ -695,28 +678,55 @@ function onDrop(e) {
   const x = (e.clientX - rect.left - trs.tx) / scale
   const y = (e.clientY - rect.top  - trs.ty) / scale
 
-  const id      = crypto.randomUUID ? crypto.randomUUID()
+  const id   = crypto.randomUUID ? crypto.randomUUID()
     : `new-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const name    = humanizeType(elementType)
+  const name = humanizeType(elementType)
   const w = 120, h = 55
-  const bodyPath = getElementPath(elementType, w, h)
-  const iconId   = ELEMENT_ICON[elementType]
-  const iconSize = 13
 
-  graph.addNode({
-    id, x: x - w/2, y: y - h/2, width: w, height: h,
-    zIndex: 1,
-    markup: ELEMENT_MARKUP,
-    data: { type: 'element', element_id: id, element_type: elementType, name, id },
-    attrs: {
-      body:  { d: bodyPath, fill: nodeColor(elementType), stroke: '#888', strokeWidth: 1, magnet: true },
-      label: { text: name, fontSize: 10, fill: '#222',
-               refX: '50%', refY: '50%', textAnchor: 'middle', textVerticalAnchor: 'middle',
-               textWrap: { text: name, width: w - (iconId ? iconSize + 6 : 8), height: h - 8, ellipsis: true } },
-      icon: iconId ? { href: `#${iconId}`, x: w - iconSize - 2, y: 2, width: iconSize, height: iconSize }
-                   : { width: 0, height: 0 },
-    },
-  })
+  if (elementType === 'DiagramGroup') {
+    const fillColor = nodeColor('DiagramGroup')
+    const tabW = Math.floor(w / 2)
+    graph.addNode({
+      id, x: x - w/2, y: y - h/2, width: w, height: h,
+      zIndex: 0,
+      markup: [
+        { tagName: 'rect',  selector: 'body_fill' },
+        { tagName: 'rect',  selector: 'tab_fill'  },
+        { tagName: 'path',  selector: 'outline'   },
+        { tagName: 'text',  selector: 'label'     },
+      ],
+      data: { type: 'group', name, id },
+      attrs: {
+        body_fill: { x: 0, y: TAB_H, width: w, height: Math.max(0, h - TAB_H),
+                     fill: fillColor, stroke: 'none' },
+        tab_fill:  { x: 0, y: 0, width: tabW, height: TAB_H,
+                     fill: darkenColor(fillColor), stroke: 'none' },
+        outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} H ${w} V ${h} H 0 Z`,
+                     fill: 'none', stroke: '#999', strokeWidth: 1 },
+        label:     { text: name, x: 6, y: TAB_H / 2,
+                     textAnchor: 'start', textVerticalAnchor: 'middle',
+                     fontSize: 11, fontWeight: 600, fill: labelColor(fillColor),
+                     textWrap: { text: name, width: tabW - 12, ellipsis: true } },
+      },
+    })
+  } else {
+    const bodyPath = getElementPath(elementType, w, h)
+    const iconId   = ELEMENT_ICON[elementType]
+    const iconSize = 13
+    graph.addNode({
+      id, x: x - w/2, y: y - h/2, width: w, height: h,
+      zIndex: 1, markup: ELEMENT_MARKUP,
+      data: { type: 'element', element_id: id, element_type: elementType, name, id },
+      attrs: {
+        body:  { d: bodyPath, fill: nodeColor(elementType), stroke: '#888', strokeWidth: 1, magnet: true },
+        label: { text: name, fontSize: 10, fill: '#222',
+                 refX: '50%', refY: '50%', textAnchor: 'middle', textVerticalAnchor: 'middle',
+                 textWrap: { text: name, width: w - (iconId ? iconSize + 6 : 8), height: h - 8, ellipsis: true } },
+        icon: iconId ? { href: `#${iconId}`, x: w - iconSize - 2, y: 2, width: iconSize, height: iconSize }
+                     : { width: 0, height: 0 },
+      },
+    })
+  }
 
   // Add to model tree
   store.addElement(store.findFolderByType(folderType)?.id, elementType)
