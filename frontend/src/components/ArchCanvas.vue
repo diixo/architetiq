@@ -485,6 +485,7 @@ function renderDiagram() {
           body: {
             d: bodyPath, fill: nodeColor(n.element_type),
             stroke: '#888', strokeWidth: 1, magnet: true,
+            ...(n.element_type === 'Grouping' ? { strokeDasharray: '8 4' } : {}),
           },
           label: {
             text: n.name, fontSize: 10, fill: '#222',
@@ -711,7 +712,8 @@ function onDrop(e) {
       zIndex: 1, markup: ELEMENT_MARKUP,
       data: { type: 'element', element_id: id, element_type: elementType, name, id },
       attrs: {
-        body:  { d: bodyPath, fill: nodeColor(elementType), stroke: '#888', strokeWidth: 1, magnet: true },
+        body:  { d: bodyPath, fill: nodeColor(elementType), stroke: '#888', strokeWidth: 1, magnet: true,
+                 ...(elementType === 'Grouping' ? { strokeDasharray: '8 4' } : {}) },
         label: { text: name, fontSize: 10, fill: '#222',
                  refX: '50%', refY: '50%', textAnchor: 'middle', textVerticalAnchor: 'middle',
                  textWrap: { text: name, width: w - (iconId ? iconSize + 6 : 8), height: h - 8, ellipsis: true } },
