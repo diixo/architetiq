@@ -1432,6 +1432,107 @@ class ExportWithDiagramDataTests(TestCase):
         self.assertIn('sourceConnection', xml)
         self.assertIn('archimateRelationship="r1"', xml)
 
+    def test_export_note_uses_archimate_note_type(self):
+        """Note nodes export with xsi:type='archimate:Note', not DiagramModelNote."""
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'n1', 'type': 'note', 'name': 'Some note text',
+                 'x': 10, 'y': 10, 'width': 100, 'height': 40},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('archimate:Note', xml)
+        self.assertNotIn('archimate:DiagramModelNote', xml)
+
+    def test_export_note_content_present(self):
+        """Exported note has <content> child element with the note text."""
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'n1', 'type': 'note', 'name': 'Hello note',
+                 'x': 0, 'y': 0, 'width': 100, 'height': 40},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('<content>Hello note</content>', xml)
+
+    def test_export_nested_element_uses_relative_bounds(self):
+        """Element nested inside a group exports bounds relative to the group, not absolute."""
+        import xml.etree.ElementTree as ET
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'g1', 'type': 'group', 'name': 'My Group',
+                 'x': 100, 'y': 100, 'width': 300, 'height': 200},
+                {'id': 'd1', 'type': 'element', 'element_id': 'e1',
+                 'element_type': 'BusinessActor', 'name': 'Actor',
+                 'x': 150, 'y': 130, 'width': 120, 'height': 55,
+                 'parent_id': 'g1'},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            raw = self.client.get('/api/model/export/').content
+        root = ET.fromstring(raw)
+        # Find the group child
+        group_child = next(
+            (e for e in root.iter()
+             if e.get('{http://www.w3.org/2001/XMLSchema-instance}type') == 'archimate:Group'),
+            None
+        )
+        self.assertIsNotNone(group_child, "Group <child> not found in export")
+        # Element must be nested inside the group, not a sibling
+        nested = next(
+            (e for e in group_child.iter()
+             if e.get('{http://www.w3.org/2001/XMLSchema-instance}type') == 'archimate:DiagramObject'),
+            None
+        )
+        self.assertIsNotNone(nested, "Element not nested inside group")
+        # Bounds must be relative: (150-100, 130-100) = (50, 30)
+        bounds = nested.find('bounds')
+        self.assertIsNotNone(bounds)
+        self.assertEqual(bounds.get('x'), '50', "x should be relative to group (150-100=50)")
+        self.assertEqual(bounds.get('y'), '30', "y should be relative to group (130-100=30)")
+
+    def test_export_relation_with_source_target(self):
+        """Relation element with source/target in model exports those attributes."""
+        import json
+        model = {
+            'name': 'RelTest', 'type': 'model', 'id': 'mod2',
+            'children': [
+                {'name': 'Business', 'type': 'node', 'id': 'fb',
+                 'folder_type': 'business', 'children': [
+                    {'id': 'e1', 'name': 'A', 'type': 'element',
+                     'element_type': 'BusinessActor', 'children': []},
+                    {'id': 'e2', 'name': 'B', 'type': 'element',
+                     'element_type': 'BusinessProcess', 'children': []},
+                ]},
+                {'name': 'Relations', 'type': 'node', 'id': 'fr',
+                 'folder_type': 'relations', 'children': [
+                    {'id': 'rel1', 'name': '', 'type': 'element',
+                     'element_type': 'AssociationRelationship',
+                     'source': 'e1', 'target': 'e2', 'children': []},
+                ]},
+                {'name': 'Views', 'type': 'node', 'id': 'fv',
+                 'folder_type': 'diagrams', 'children': []},
+            ]
+        }
+        with open(self._model_file, 'w') as f:
+            json.dump(model, f)
+        with self._patch():
+            xml = self.client.get('/api/model/export/').content.decode()
+        self.assertIn('archimate:AssociationRelationship', xml)
+        self.assertIn('source="e1"', xml)
+        self.assertIn('target="e2"', xml)
+
     def test_export_view_without_diagram_json_has_no_children(self):
         """View with no diagram JSON exports as an empty view element."""
         self._write_model()
@@ -1513,3 +1614,338 @@ class ZipArchimateTests(TestCase):
             r = client.post('/upload/', {'file': f})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()['name'], 'ZippedModel')
+
+
+class DocumentationFormatTests(TestCase):
+    """Export writes documentation/purpose as child XML elements (Archi ecore requires kind=element)."""
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR='/nonexistent')
+
+    def test_export_documentation_as_child_element(self):
+        """documentation is exported as <documentation> child, not as XML attribute."""
+        payload = {
+            'name': 'Doc Test', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Business', 'type': 'node', 'id': 'f1',
+                'folder_type': 'business', 'children': [{
+                    'id': 'e1', 'name': 'Actor', 'type': 'element',
+                    'element_type': 'BusinessActor',
+                    'documentation': 'Detailed description here.',
+                    'children': [],
+                }]
+            }]
+        }
+        with self._patch():
+            self.client.post('/api/model/save/', json.dumps(payload),
+                             content_type='application/json')
+            r = self.client.get('/api/model/export/')
+        xml = r.content.decode('utf-8')
+        # Must be a child element, NOT an attribute
+        self.assertIn('<documentation>Detailed description here.</documentation>', xml)
+        self.assertNotIn('documentation="Detailed description here."', xml)
+
+    def test_export_purpose_as_child_element(self):
+        """purpose is exported as <purpose> child element, not as XML attribute."""
+        payload = {
+            'name': 'Purpose Test', 'type': 'model', 'id': 'm1',
+            'purpose': 'This is the model purpose.',
+            'children': [],
+        }
+        with self._patch():
+            self.client.post('/api/model/save/', json.dumps(payload),
+                             content_type='application/json')
+            r = self.client.get('/api/model/export/')
+        xml = r.content.decode('utf-8')
+        self.assertIn('<purpose>This is the model purpose.</purpose>', xml)
+        self.assertNotIn('purpose="This is the model purpose."', xml)
+
+    def test_import_reads_documentation_from_child_element(self):
+        """Import reads <documentation> child element (Archi native format)."""
+        xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+            b' name="DocModel" id="m1">'
+            b'<folder name="Business" type="business" id="f1">'
+            b'<element xsi:type="archimate:BusinessActor" id="e1" name="Actor">'
+            b'<documentation>Actor description from child element.</documentation>'
+            b'</element>'
+            b'</folder>'
+            b'</archimate:model>'
+        )
+        model = _parse_archimate(xml)
+        business = next(c for c in model['children'] if c['name'] == 'Business')
+        actor = next(e for e in business['children'] if e['name'] == 'Actor')
+        self.assertEqual(actor['documentation'], 'Actor description from child element.')
+
+    def test_import_reads_purpose_from_child_element(self):
+        """Import reads <purpose> child element (Archi native format)."""
+        xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+            b' name="PurposeModel" id="m1">'
+            b'<purpose>Model purpose text.</purpose>'
+            b'<folder name="Business" type="business" id="f1"/>'
+            b'</archimate:model>'
+        )
+        model = _parse_archimate(xml)
+        self.assertEqual(model.get('purpose'), 'Model purpose text.')
+
+    def test_export_documentation_roundtrip(self):
+        """documentation survives upload → export round-trip as child element."""
+        xml = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"'
+            b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+            b' name="RoundTrip" id="m1">'
+            b'<folder name="Business" type="business" id="f1">'
+            b'<element xsi:type="archimate:BusinessActor" id="e1" name="Actor">'
+            b'<documentation>Round-trip documentation.</documentation>'
+            b'</element>'
+            b'</folder>'
+            b'</archimate:model>'
+        )
+        f = SimpleUploadedFile('test.archimate', xml,
+                               content_type='application/octet-stream')
+        with self._patch():
+            self.client.post('/upload/', {'file': f})
+            r = self.client.get('/api/model/export/')
+        exported = r.content.decode('utf-8')
+        self.assertIn('<documentation>Round-trip documentation.</documentation>', exported)
+        self.assertNotIn('documentation="Round-trip documentation."', exported)
+
+
+class AspiceExportTests(TestCase):
+    """Export tests using the real ASPICE grafico project from data/aspice-archi-prj/model/."""
+
+    GRAFICO_DIR = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'aspice-archi-prj', 'model')
+    )
+
+    def setUp(self):
+        if not os.path.isdir(self.GRAFICO_DIR):
+            self.skipTest('ASPICE grafico project not found')
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR=self.GRAFICO_DIR)
+
+    def _load_and_export(self):
+        with self._patch():
+            r_load = self.client.post('/api/model/load-aspice/')
+            r_export = self.client.get('/api/model/export/')
+        return r_load, r_export
+
+    # ── Load ─────────────────────────────────────────────────────────────────
+
+    def test_aspice_loads_successfully(self):
+        """api_model_load_aspice returns 200 and ASPICE model name."""
+        with self._patch():
+            r = self.client.post('/api/model/load-aspice/')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['ok'])
+        self.assertEqual(r.json()['name'], 'ASPICE')
+
+    def test_aspice_model_has_expected_folders(self):
+        """Loaded ASPICE model contains standard ArchiMate folders."""
+        with self._patch():
+            self.client.post('/api/model/load-aspice/')
+            r = self.client.get('/api/model/')
+        model = r.json()
+        folder_names = {c['name'] for c in model['children']}
+        for expected in ('Business', 'Relations', 'Views'):
+            self.assertIn(expected, folder_names, f"Folder '{expected}' missing from ASPICE model")
+
+    def test_aspice_business_folder_has_elements(self):
+        """Business folder contains elements after loading ASPICE."""
+        with self._patch():
+            self.client.post('/api/model/load-aspice/')
+            r = self.client.get('/api/model/')
+        model = r.json()
+        business = next(c for c in model['children'] if c['name'] == 'Business')
+        self.assertGreater(len(business['children']), 0, "Business folder is empty")
+
+    def test_aspice_elements_have_documentation(self):
+        """ASPICE elements preserve documentation text after loading."""
+        with self._patch():
+            self.client.post('/api/model/load-aspice/')
+            r = self.client.get('/api/model/')
+        model = r.json()
+        business = next(c for c in model['children'] if c['name'] == 'Business')
+        elements_with_docs = [e for e in business['children'] if e.get('documentation')]
+        self.assertGreater(len(elements_with_docs), 0, "No elements have documentation")
+
+    def test_aspice_views_folder_has_views(self):
+        """Views folder contains view entries after loading ASPICE."""
+        with self._patch():
+            self.client.post('/api/model/load-aspice/')
+            r = self.client.get('/api/model/')
+        model = r.json()
+        def count_views(node):
+            count = 0
+            if node.get('type') == 'view':
+                count += 1
+            for ch in node.get('children', []):
+                count += count_views(ch)
+            return count
+        views_folder = next(c for c in model['children'] if c['name'] == 'Views')
+        total_views = count_views(views_folder)
+        self.assertGreater(total_views, 0, "Views folder has no views")
+
+    # ── Export structure ──────────────────────────────────────────────────────
+
+    def test_aspice_export_returns_200(self):
+        """ASPICE export returns HTTP 200 with XML content type."""
+        r_load, r_export = self._load_and_export()
+        self.assertEqual(r_export.status_code, 200)
+        self.assertIn('application/xml', r_export['Content-Type'])
+
+    def test_aspice_export_is_valid_xml(self):
+        """Exported ASPICE archimate file is well-formed XML."""
+        import xml.etree.ElementTree as ET
+        _, r_export = self._load_and_export()
+        try:
+            ET.fromstring(r_export.content)
+        except ET.ParseError as e:
+            self.fail(f"Exported XML is not well-formed: {e}")
+
+    def test_aspice_export_has_archimate_root(self):
+        """Exported XML has <archimate:model> root with correct namespace."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('<archimate:model', xml)
+        self.assertIn('xmlns:archimate="http://www.archimatetool.com/archimate"', xml)
+
+    def test_aspice_export_model_name(self):
+        """Exported XML carries the ASPICE model name."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('name="ASPICE"', xml)
+
+    def test_aspice_export_has_business_folder(self):
+        """Exported XML contains a Business folder."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('name="Business"', xml)
+        self.assertIn('type="business"', xml)
+
+    def test_aspice_export_has_views_folder(self):
+        """Exported XML contains a Views folder."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('type="diagrams"', xml)
+
+    def test_aspice_export_documentation_as_child_element(self):
+        """Exported ASPICE XML uses <documentation> child elements, not attributes."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('<documentation>', xml,
+                      "documentation should be a child element in exported XML")
+        self.assertNotIn('documentation="', xml,
+                         "documentation must NOT be an XML attribute")
+
+    def test_aspice_export_purpose_as_child_element(self):
+        """Exported ASPICE XML uses <purpose> child element, not attribute."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        # ASPICE has a purpose — verify it's a child element if present
+        if 'purpose' in xml.lower():
+            self.assertNotIn('purpose="', xml,
+                             "purpose must NOT be an XML attribute")
+
+    def test_aspice_export_has_elements(self):
+        """Exported XML contains ArchiMate elements (BusinessFunction etc.)."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('archimate:BusinessFunction', xml)
+
+    def test_aspice_export_has_relations(self):
+        """Exported XML contains relation elements in Relations folder."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('type="relations"', xml)
+
+    def test_aspice_export_views_have_diagram_children(self):
+        """ASPICE views contain <child> diagram objects after grafico diagram parsing."""
+        import xml.etree.ElementTree as ET
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertIn('<child ', xml, "No <child> elements found — grafico diagram parsing may have failed")
+
+    def test_aspice_export_child_has_bounds(self):
+        """Exported <child> elements contain <bounds> with position data."""
+        import xml.etree.ElementTree as ET
+        _, r_export = self._load_and_export()
+        root = ET.fromstring(r_export.content)
+        children_with_bounds = 0
+        for elem in root.iter():
+            tag = elem.tag.split('}')[-1]
+            if tag == 'child':
+                for sub in elem:
+                    if sub.tag.split('}')[-1] == 'bounds':
+                        children_with_bounds += 1
+                        break
+        self.assertGreater(children_with_bounds, 0, "No <child> with <bounds> found in export")
+
+    def test_aspice_relations_have_source_and_target(self):
+        """Exported relation elements carry source and target attributes."""
+        import xml.etree.ElementTree as ET
+        _, r_export = self._load_and_export()
+        root = ET.fromstring(r_export.content)
+        relations_with_src_tgt = [
+            e for e in root.iter()
+            if e.get('source') and e.get('target')
+            and 'Relationship' in (e.get(
+                '{http://www.w3.org/2001/XMLSchema-instance}type', '') or '')
+        ]
+        self.assertGreater(
+            len(relations_with_src_tgt), 0,
+            "No relation elements with source+target found — "
+            "grafico relations may still be skipped during parse"
+        )
+
+    def test_aspice_no_diagram_model_note_type(self):
+        """Notes must not be exported with the abstract DiagramModelNote class."""
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        self.assertNotIn(
+            'archimate:DiagramModelNote', xml,
+            "DiagramModelNote is abstract in Archi — use archimate:Note instead"
+        )
+
+    def test_aspice_archimate_relationship_ids_resolved(self):
+        """Every archimateRelationship ID in the export exists as an element."""
+        import xml.etree.ElementTree as ET, re
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        root = ET.fromstring(r_export.content)
+
+        # Collect all element ids in the model
+        element_ids = {e.get('id') for e in root.iter() if e.get('id')}
+
+        # Collect all archimateRelationship refs from sourceConnections
+        refs = re.findall(r'archimateRelationship="([^"]+)"', xml)
+        unresolved = [rid for rid in refs if rid not in element_ids]
+        self.assertEqual(
+            unresolved, [],
+            f"Unresolved archimateRelationship IDs: {unresolved[:5]}..."
+        )

@@ -36,9 +36,11 @@ _GRAFICO_DIR = os.path.normpath(
 
 _XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
 
+_ARCHIMATE_NS = 'http://www.archimatetool.com/archimate'
+
 _VIEW_TYPES = {"ArchimateDiagramModel", "SketchModel", "CanvasModel"}
 
-_SKIP_TYPES = {"Relationship", "Relation"}
+_SKIP_TYPES: set = set()  # no longer used — relations are included in model
 
 
 _FOLDER_TYPE_BY_NAME = {
@@ -91,6 +93,14 @@ def _el_type(xsi_type):
 
 # ── Native Archi format (.archimate) ──────────────────────────────────────────
 
+def _get_documentation(elem):
+    """Read documentation from child element <documentation> or legacy attribute."""
+    doc_child = elem.find('documentation')
+    if doc_child is not None and doc_child.text:
+        return doc_child.text
+    return elem.get("documentation", "")
+
+
 def _parse_native(root):
     def parse_folder(elem):
         children = []
@@ -105,7 +115,7 @@ def _parse_native(root):
                     "type": "view" if et in _VIEW_TYPES else "element",
                     "element_type": et,
                     "id": child.get("id", ""),
-                    "documentation": child.get("documentation", ""),
+                    "documentation": _get_documentation(child),
                     "children": [],
                 })
         node = {
@@ -119,7 +129,10 @@ def _parse_native(root):
             node["folder_type"] = ft
         return node
 
-    return {
+    purpose_child = root.find('purpose')
+    purpose = (purpose_child.text or "") if purpose_child is not None else root.get("purpose", "")
+
+    model = {
         "name": root.get("name", "*New Model"),
         "type": "model",
         "id": root.get("id", ""),
@@ -129,6 +142,9 @@ def _parse_native(root):
             if _local(child.tag) == "folder"
         ],
     }
+    if purpose:
+        model["purpose"] = purpose
+    return model
 
 
 # ── ArchiMate Exchange Format (.xml) ─────────────────────────────────────────
@@ -237,17 +253,28 @@ def _parse_grafico(model_dir):
                 except ET.ParseError:
                     continue
                 tag = _local(elem.tag)
-                if any(skip in tag for skip in _SKIP_TYPES):
-                    continue
                 is_view = tag in _VIEW_TYPES
-                children.append({
+                entry = {
                     "name": elem.get("name", ""),
                     "type": "view" if is_view else "element",
                     "element_type": tag,
                     "id": elem.get("id", ""),
                     "documentation": elem.get("documentation", ""),
                     "children": [],
-                })
+                }
+                # Grafico stores relation source/target as child elements with
+                # href="FileName.xml#id" — extract the ID after '#'
+                for role in ("source", "target"):
+                    child_el = (
+                        elem.find(f'{{{_ARCHIMATE_NS}}}{role}')
+                        or elem.find(role)
+                    )
+                    if child_el is not None:
+                        href = child_el.get("href", "")
+                        rid = href.split("#")[-1] if "#" in href else href
+                        if rid:
+                            entry[role] = rid
+                children.append(entry)
 
         node = {
             "name": folder_name,
@@ -272,6 +299,145 @@ def _parse_grafico(model_dir):
         "purpose": purpose,
         "children": children,
     }
+
+
+def _href_to_id(href):
+    """Extract the id fragment from grafico href='SomeType_id.xml#id'."""
+    if href and '#' in href:
+        return href.split('#', 1)[1]
+    return href or ''
+
+
+def _parse_grafico_diagram(xml_path, elements_index):
+    """Parse one grafico ArchimateDiagramModel XML file into our diagram JSON format."""
+    try:
+        root = ET.parse(xml_path).getroot()
+    except ET.ParseError:
+        return None
+
+    view_id = root.get('id', '')
+    if not view_id:
+        return None
+
+    documentation = _get_documentation(root)
+
+    nodes = []
+    edges = []
+    node_bounds = {}
+
+    def get_bounds(elem):
+        for sub in elem:
+            if _local(sub.tag) == 'bounds':
+                return (int(sub.get('x', 0)), int(sub.get('y', 0)),
+                        int(sub.get('width', 120)), int(sub.get('height', 55)))
+        return 0, 0, 120, 55
+
+    def parse_child(elem, px=0, py=0, parent_id=None):
+        xsi_type = _el_type(elem.get(_XSI_TYPE, ''))
+        oid = elem.get('id', '')
+        bx, by, bw, bh = get_bounds(elem)
+        ax, ay = px + bx, py + by
+        if oid:
+            node_bounds[oid] = (ax, ay, bw, bh)
+
+        if xsi_type == 'DiagramModelArchimateObject':
+            elem_id, elem_type, elem_name = '', '', ''
+            for sub in elem:
+                if _local(sub.tag) == 'archimateElement':
+                    elem_id = _href_to_id(sub.get('href', ''))
+                    elem_type = _el_type(sub.get(_XSI_TYPE, ''))
+                    break
+            if elem_id and elem_id in elements_index:
+                info = elements_index[elem_id]
+                elem_name = info.get('name', '')
+                if not elem_type:
+                    elem_type = info.get('element_type', '')
+
+            node = {
+                'id': oid, 'type': 'element',
+                'element_id': elem_id, 'element_type': elem_type, 'name': elem_name,
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            }
+            if parent_id:
+                node['parent_id'] = parent_id
+            nodes.append(node)
+
+            for sub in elem:
+                stag = _local(sub.tag)
+                if stag == 'sourceConnections':
+                    rel_id, edge_type = '', ''
+                    for sub2 in sub:
+                        if _local(sub2.tag) == 'archimateRelationship':
+                            rel_id = _href_to_id(sub2.get('href', ''))
+                            edge_type = _el_type(sub2.get(_XSI_TYPE, ''))
+                            break
+                    if not edge_type and rel_id:
+                        edge_type = elements_index.get(rel_id, {}).get('element_type', '')
+                    edges.append({
+                        'id': sub.get('id', ''), 'type': edge_type,
+                        'source': sub.get('source', oid),
+                        'target': sub.get('target', ''),
+                        'relation_id': rel_id, 'vertices': [],
+                    })
+                elif stag == 'children':
+                    parse_child(sub, ax, ay, oid)
+
+        elif xsi_type == 'DiagramModelGroup':
+            node = {
+                'id': oid, 'type': 'group',
+                'name': elem.get('name', ''),
+                'fill_color': elem.get('fillColor', ''),
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            }
+            if parent_id:
+                node['parent_id'] = parent_id
+            nodes.append(node)
+            for sub in elem:
+                if _local(sub.tag) == 'children':
+                    parse_child(sub, ax, ay, oid)
+
+        elif xsi_type == 'DiagramModelNote':
+            content = elem.get('content', '')
+            node = {
+                'id': oid, 'type': 'note', 'name': content,
+                'x': ax, 'y': ay, 'width': bw, 'height': bh,
+            }
+            if parent_id:
+                node['parent_id'] = parent_id
+            nodes.append(node)
+
+        # DiagramModelReference — skip (no matching canvas type yet)
+
+    for child in root:
+        if _local(child.tag) == 'children':
+            parse_child(child)
+
+    return {
+        'id': view_id,
+        'name': root.get('name', ''),
+        'documentation': documentation,
+        'nodes': nodes,
+        'edges': edges,
+        'user_edges': [],
+    }
+
+
+def _save_grafico_diagrams(model_dir, elements_index, diagrams_dir):
+    """Walk all ArchimateDiagramModel_*.xml files under model_dir/diagrams/ and save JSON."""
+    grafico_diagrams_root = os.path.join(model_dir, 'diagrams')
+    if not os.path.isdir(grafico_diagrams_root):
+        return
+    os.makedirs(diagrams_dir, exist_ok=True)
+    for dirpath, _dirs, filenames in os.walk(grafico_diagrams_root):
+        for fname in filenames:
+            if not fname.startswith('ArchimateDiagramModel_') or not fname.endswith('.xml'):
+                continue
+            xml_path = os.path.join(dirpath, fname)
+            diagram = _parse_grafico_diagram(xml_path, elements_index)
+            if diagram:
+                out_path = os.path.join(diagrams_dir, f"{diagram['id']}.json")
+                with open(out_path, 'w', encoding='utf-8') as f:
+                    json.dump(diagram, f, ensure_ascii=False, indent=2)
 
 
 # ── Dispatcher ────────────────────────────────────────────────────────────────
@@ -326,6 +492,16 @@ def api_model_load_aspice(request):
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
     with open(_MODEL_FILE, "w", encoding="utf-8") as f:
         json.dump(model, f, ensure_ascii=False, indent=2)
+    # Clear old diagrams then parse grafico visual layout
+    if os.path.isdir(_DIAGRAMS_DIR):
+        for fname in os.listdir(_DIAGRAMS_DIR):
+            if fname.endswith('.json'):
+                try:
+                    os.remove(os.path.join(_DIAGRAMS_DIR, fname))
+                except OSError:
+                    pass
+    elements_index = _build_elements_index(model)
+    _save_grafico_diagrams(_GRAFICO_DIR, elements_index, _DIAGRAMS_DIR)
     return JsonResponse({'ok': True, 'name': model.get('name', '')})
 
 
@@ -401,8 +577,12 @@ def _export_collect(model):
 
 
 def _make_child_element(node, XSI):
-    """Build a <child> ET.Element from a layout node dict (enhanced format)."""
-    ntype = node.get('node_type', 'element')
+    """Build a <child> ET.Element from a layout node dict.
+
+    Nodes from parsers use 'type'; canvas-save payloads use 'node_type'.
+    Check 'type' first so both paths work.
+    """
+    ntype = node.get('type') or node.get('node_type', 'element')
     nid   = node.get('id', '')
     child = ET.Element('child')
     if ntype == 'element' and node.get('element_id'):
@@ -414,8 +594,10 @@ def _make_child_element(node, XSI):
         child.set('id', nid)
         if node.get('name'):
             child.set('name', node['name'])
+        if node.get('fill_color'):
+            child.set('fillColor', node['fill_color'])
     elif ntype == 'note':
-        child.set(f'{{{XSI}}}type', 'archimate:DiagramModelNote')
+        child.set(f'{{{XSI}}}type', 'archimate:Note')
         child.set('id', nid)
         if node.get('name'):
             c = ET.SubElement(child, 'content')
@@ -449,16 +631,35 @@ def _add_source_connection(src_xml, edge, rel_id, XSI):
 def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_rel):
     """Add <child> and <sourceConnection> elements to a view XML element for export."""
     built = {}
+    node_pos = {}
+
+    # First pass: create all child XML elements with absolute coords
     for node in diagram.get('nodes', []):
         child_xml = _make_child_element(node, XSI)
         if child_xml is not None:
+            built[node['id']] = (child_xml, node.get('parent_id'))
+            node_pos[node['id']] = (float(node.get('x', 0)), float(node.get('y', 0)))
+
+    # Second pass: nest under parent or attach directly to view.
+    # Archi native format expects bounds relative to the parent container,
+    # so subtract the parent's absolute position when nesting.
+    for nid, (child_xml, parent_id) in built.items():
+        if parent_id and parent_id in built:
+            px, py = node_pos.get(parent_id, (0.0, 0.0))
+            cx, cy = node_pos.get(nid, (0.0, 0.0))
+            bounds = child_xml.find('bounds')
+            if bounds is not None:
+                bounds.set('x', str(int(cx - px)))
+                bounds.set('y', str(int(cy - py)))
+            built[parent_id][0].append(child_xml)
+        else:
             view_xml.append(child_xml)
-            built[node['id']] = child_xml
 
     for edge in diagram.get('edges', []):
-        src_xml = built.get(edge.get('source', ''))
-        if src_xml is None:
+        entry = built.get(edge.get('source', ''))
+        if entry is None:
             continue
+        src_xml = entry[0]
         conn = ET.SubElement(src_xml, 'sourceConnection')
         conn.set(f'{{{XSI}}}type', 'archimate:Connection')
         conn.set('id', edge.get('id', ''))
@@ -472,9 +673,9 @@ def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_re
             bp.set('startY', str(int(v.get('y', 0))))
 
     for edge, rel_id in user_edges_with_rel:
-        src_xml = built.get(edge.get('source_cell', ''))
-        if src_xml is not None:
-            _add_source_connection(src_xml, edge, rel_id, XSI)
+        entry = built.get(edge.get('source_cell', ''))
+        if entry is not None:
+            _add_source_connection(entry[0], edge, rel_id, XSI)
 
 
 def _build_archimate_xml(model):
@@ -517,7 +718,7 @@ def _build_archimate_xml(model):
     root.set('id',   model.get('id', ''))
     root.set('version', '4.6.0')
     if model.get('purpose'):
-        root.set('purpose', model['purpose'])
+        ET.SubElement(root, 'purpose').text = model['purpose']
 
     def build_node(parent, node):
         if node['type'] == 'node':
@@ -543,8 +744,12 @@ def _build_archimate_xml(model):
             elem.set(f'{{{XSI}}}type', f'archimate:{et}')
             elem.set('name', node.get('name', ''))
             elem.set('id',   node.get('id', ''))
+            if node.get('source'):
+                elem.set('source', node['source'])
+            if node.get('target'):
+                elem.set('target', node['target'])
             if node.get('documentation'):
-                elem.set('documentation', node['documentation'])
+                ET.SubElement(elem, 'documentation').text = node['documentation']
             if node['type'] == 'view':
                 vid = node['id']
                 _append_diagram_children(
