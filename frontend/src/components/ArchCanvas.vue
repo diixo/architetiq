@@ -295,9 +295,18 @@ function orthogonalPoints(src, tgt) {
 // Custom shapes (process arrow, function polygon, etc.) are user-selectable alternatives.
 // Only truly standardized shape differences are kept here:
 const SHAPE_TYPE = {
-  // Passive structure: folded top-right corner (standard ArchiMate notation)
+  // Passive structure: folded top-right corner
   BusinessObject:'passive', DataObject:'passive', Artifact:'passive',
   Contract:'passive', Representation:'passive', Material:'passive',
+  // Note: dog-ear bottom-right corner (cut=13px)
+  Note: 'note',
+  // Behavioral elements: RoundedRectangleFigureDelegate arc=20 → rx=10
+  BusinessProcess:'rounded', ApplicationProcess:'rounded', TechnologyProcess:'rounded',
+  BusinessService:'rounded', ApplicationService:'rounded', TechnologyService:'rounded',
+  BusinessFunction:'rounded', ApplicationFunction:'rounded', TechnologyFunction:'rounded',
+  BusinessInteraction:'rounded', ApplicationInteraction:'rounded', TechnologyInteraction:'rounded',
+  BusinessEvent:'rounded', ApplicationEvent:'rounded', TechnologyEvent:'rounded', ImplementationEvent:'rounded',
+  WorkPackage:'rounded', Capability:'rounded', CourseOfAction:'rounded', ValueStream:'rounded',
 }
 
 function roundedRect(w, h, r = 3) {
@@ -312,8 +321,14 @@ function getElementPath(et, w, h) {
       const f = Math.min(w * 0.18, h * 0.28, 12)
       return `M 0,0 H ${w-f} L ${w},${f} V ${h} H 0 Z`
     }
+    case 'note': {
+      const cut = 13
+      return `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`
+    }
+    case 'rounded':
+      return roundedRect(w, h, 10)
     default:
-      return roundedRect(w, h, 3)
+      return `M 0,0 H ${w} V ${h} H 0 Z`
   }
 }
 
@@ -322,6 +337,11 @@ const ELEMENT_MARKUP = [
   { tagName: 'path', selector: 'body' },
   { tagName: 'text', selector: 'label' },
   { tagName: 'use',  selector: 'icon' },
+]
+
+const NOTE_MARKUP = [
+  { tagName: 'path', selector: 'body' },
+  { tagName: 'text', selector: 'label' },
 ]
 
 // ── Group rendering helpers ───────────────────────────────────────────────────
@@ -499,13 +519,14 @@ function renderDiagram() {
         },
       })
     } else if (n.type === 'note') {
+      const cut = 13
+      const notePath = `M 0,0 H ${n.width} V ${n.height - cut} L ${n.width - cut},${n.height} H 0 Z`
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
-        zIndex: 1,
-        label: n.name,
+        zIndex: 1, markup: NOTE_MARKUP,
         data: { type: 'note', name: n.name, id: n.id },
         attrs: {
-          body:  { fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
+          body:  { d: notePath, fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
           label: { fontSize:10, fill:'#555', textWrap: wrap,
                    textVerticalAnchor:'top', refY:4 },
         },

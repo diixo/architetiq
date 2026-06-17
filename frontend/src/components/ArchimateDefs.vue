@@ -138,16 +138,16 @@
         <circle cx="11" cy="8" r="4.5" fill="none" stroke="#555" stroke-width="1.5"/>
       </symbol>
 
-      <!-- Network: four nodes in diamond + connecting lines -->
+      <!-- Network: 4 circles in parallelogram arrangement + connecting lines (CommunicationNetworkFigure.drawIcon) -->
       <symbol id="am-network" viewBox="0 0 16 16">
-        <circle cx="8"    cy="1.5"  r="2" fill="none" stroke="#555" stroke-width="1.2"/>
-        <circle cx="14.5" cy="8"    r="2" fill="none" stroke="#555" stroke-width="1.2"/>
-        <circle cx="8"    cy="14.5" r="2" fill="none" stroke="#555" stroke-width="1.2"/>
-        <circle cx="1.5"  cy="8"    r="2" fill="none" stroke="#555" stroke-width="1.2"/>
-        <line x1="8"    y1="3.5"  x2="12.5" y2="6.1"  stroke="#555" stroke-width="1.2"/>
-        <line x1="12.5" y1="9.9"  x2="8"    y2="12.5" stroke="#555" stroke-width="1.2"/>
-        <line x1="3.5"  y1="9.9"  x2="8"    y2="12.5" stroke="#555" stroke-width="1.2"/>
-        <line x1="8"    y1="3.5"  x2="3.5"  y2="6.1"  stroke="#555" stroke-width="1.2"/>
+        <circle cx="3"  cy="10.5" r="2.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="11" cy="10.5" r="2.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="5"  cy="2.5"  r="2.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <circle cx="13" cy="2.5"  r="2.5" fill="none" stroke="#555" stroke-width="1.2"/>
+        <line x1="3.5"  y1="8"    x2="4.5"  y2="5"    stroke="#555" stroke-width="1.2"/>
+        <line x1="11.5" y1="8"    x2="12.5" y2="5"    stroke="#555" stroke-width="1.2"/>
+        <line x1="5.5"  y1="10.5" x2="8.5"  y2="10.5" stroke="#555" stroke-width="1.2"/>
+        <line x1="7.5"  y1="2.5"  x2="10.5" y2="2.5"  stroke="#555" stroke-width="1.2"/>
       </symbol>
 
       <!-- Path: left/right chevrons + dashed middle -->
@@ -241,11 +241,11 @@
                  fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
       </symbol>
 
-      <!-- Constraint: same parallelogram + diagonal line -->
+      <!-- Constraint: parallelogram + diagonal from (pt+4,pt.y)→(pt,pt.y+9) (ConstraintFigure.drawIcon) -->
       <symbol id="am-constraint" viewBox="0 0 16 16">
         <polygon points="4,2 15,2 11,14 0,14"
                  fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
-        <line x1="4" y1="2" x2="11" y2="14" stroke="#555" stroke-width="1.5"/>
+        <line x1="8" y1="2" x2="4" y2="14" stroke="#555" stroke-width="1.5"/>
       </symbol>
 
       <!-- Meaning: cloud shape -->
@@ -265,13 +265,12 @@
 
       <!-- ── Implementation & Migration ────────────────────────────────── -->
 
-      <!-- WorkPackage: open circle + line + arrow -->
+      <!-- WorkPackage: open circle arc + line + filled arrowhead (WorkPackageFigure.drawIcon) -->
       <symbol id="am-workpackage" viewBox="0 0 16 16">
         <path d="M4.5,10 A4.5,4.5 0 1 1 8.5,9.5"
               fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="4.5" y1="10" x2="11" y2="10" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
-        <polyline points="11,7 15,10 11,13"
-                  fill="none" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon points="11,7 15,10 11,13" fill="#555" stroke="none"/>
       </symbol>
 
       <!-- Deliverable: document with arrow -->

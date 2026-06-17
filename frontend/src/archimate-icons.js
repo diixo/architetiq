@@ -87,7 +87,6 @@ export const ELEMENT_ICON = {
   FlowRelationship:           'am-fill-tri',
   SpecializationRelationship: 'am-open-tri',
   Junction:                   'am-junction',
-  // View extras
-  Note:           'am-meaning',
+  // View extras — Note has no corner icon (NoteFigure.java draws no icon)
   // DiagramGroup has no corner icon in Archi (uses image icon system)
 }
