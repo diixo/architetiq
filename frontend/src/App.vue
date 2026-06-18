@@ -170,10 +170,12 @@ async function onNew() {
   const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/)
   const csrfToken = csrfMatch ? csrfMatch[1] : ''
   await fetch('/api/model/new/', { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+  canvasRef.value?.clearDiagram()
   store.selected = null
   store.filterQuery = ''
-  canvasRef.value?.clearDiagram()
   await store.fetchModel()
+  const defaultView = store.findById('00000000-0000-0000-0000-000000000001')
+  if (defaultView) store.selected = defaultView
   showToast('New model created')
 }
 
