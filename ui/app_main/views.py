@@ -493,13 +493,10 @@ def api_model_load_aspice(request):
     with open(_MODEL_FILE, "w", encoding="utf-8") as f:
         json.dump(model, f, ensure_ascii=False, indent=2)
     # Clear old diagrams then parse grafico visual layout
+    import shutil as _shutil
     if os.path.isdir(_DIAGRAMS_DIR):
-        for fname in os.listdir(_DIAGRAMS_DIR):
-            if fname.endswith('.json'):
-                try:
-                    os.remove(os.path.join(_DIAGRAMS_DIR, fname))
-                except OSError:
-                    pass
+        _shutil.rmtree(_DIAGRAMS_DIR, ignore_errors=True)
+    os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
     elements_index = _build_elements_index(model)
     _save_grafico_diagrams(_GRAFICO_DIR, elements_index, _DIAGRAMS_DIR)
     return JsonResponse({'ok': True, 'name': model.get('name', '')})
@@ -514,13 +511,10 @@ def api_model_new(request):
         json.dump(_DEFAULT_MODEL, f, ensure_ascii=False, indent=2)
     shutil.copy2(_MODEL_FILE, _MODEL_FILE + '.bak')
     # Clear all saved diagram layouts so stale data from a previous project doesn't bleed in
+    import shutil as _shutil
     if os.path.isdir(_DIAGRAMS_DIR):
-        for fname in os.listdir(_DIAGRAMS_DIR):
-            if fname.endswith('.json') or fname.endswith('.json.bak'):
-                try:
-                    os.remove(os.path.join(_DIAGRAMS_DIR, fname))
-                except OSError:
-                    pass
+        _shutil.rmtree(_DIAGRAMS_DIR, ignore_errors=True)
+    os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
     return JsonResponse({'ok': True})
 
 
@@ -1125,14 +1119,10 @@ def _parse_native_diagram(view_elem, elements_index):
 
 def _parse_and_save_all_diagrams(xml_root, elements_index):
     """Parse every diagram view in a native .archimate root; save each to data/diagrams/<id>.json."""
+    import shutil as _shutil
+    if os.path.isdir(_DIAGRAMS_DIR):
+        _shutil.rmtree(_DIAGRAMS_DIR, ignore_errors=True)
     os.makedirs(_DIAGRAMS_DIR, exist_ok=True)
-    # Clear stale diagrams from any previous project before writing new ones
-    for fname in os.listdir(_DIAGRAMS_DIR):
-        if fname.endswith('.json'):
-            try:
-                os.remove(os.path.join(_DIAGRAMS_DIR, fname))
-            except OSError:
-                pass
     for elem in xml_root.iter():
         et = _el_type(elem.get(_XSI_TYPE, ''))
         if et in _VIEW_TYPES:
