@@ -617,7 +617,7 @@ def _make_child_element(node, XSI):
     return child
 
 
-def _add_source_connection(src_xml, edge, rel_id, XSI):
+def _add_source_connection(src_xml, edge, rel_id, XSI, node_pos=None):
     """Append a <sourceConnection> to src_xml element."""
     conn = ET.SubElement(src_xml, 'sourceConnection')
     conn.set(f'{{{XSI}}}type', 'archimate:Connection')
@@ -626,32 +626,44 @@ def _add_source_connection(src_xml, edge, rel_id, XSI):
     conn.set('target', edge.get('target_cell', ''))
     if rel_id:
         conn.set('archimateRelationship', rel_id)
-    for v in edge.get('vertices', []):
-        bp = ET.SubElement(conn, 'bendpoint')
-        bp.set('startX', str(int(v.get('x', 0))))
-        bp.set('startY', str(int(v.get('y', 0))))
+    vertices = edge.get('vertices', [])
+    if vertices and node_pos:
+        sx, sy, sw, sh = node_pos.get(edge.get('source_cell', ''), (0, 0, 120, 55))
+        tx, ty, tw, th = node_pos.get(edge.get('target_cell', ''), (0, 0, 120, 55))
+        src_cx, src_cy = sx + sw / 2, sy + sh / 2
+        tgt_cx, tgt_cy = tx + tw / 2, ty + th / 2
+        for v in vertices:
+            vx, vy = v.get('x', 0), v.get('y', 0)
+            bp = ET.SubElement(conn, 'bendpoint')
+            bp.set('startX', str(int(vx - src_cx)))
+            bp.set('startY', str(int(vy - src_cy)))
+            bp.set('endX',   str(int(vx - tgt_cx)))
+            bp.set('endY',   str(int(vy - tgt_cy)))
 
 
 
 def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_rel):
     """Add <child> and <sourceConnection> elements to a view XML element for export."""
     built = {}
-    node_pos = {}
+    node_pos = {}  # id → (abs_x, abs_y, w, h)
 
     # First pass: create all child XML elements with absolute coords
     for node in diagram.get('nodes', []):
         child_xml = _make_child_element(node, XSI)
         if child_xml is not None:
             built[node['id']] = (child_xml, node.get('parent_id'))
-            node_pos[node['id']] = (float(node.get('x', 0)), float(node.get('y', 0)))
+            node_pos[node['id']] = (
+                float(node.get('x', 0)), float(node.get('y', 0)),
+                float(node.get('width', 120)), float(node.get('height', 55)),
+            )
 
     # Second pass: nest under parent or attach directly to view.
     # Archi native format expects bounds relative to the parent container,
     # so subtract the parent's absolute position when nesting.
     for nid, (child_xml, parent_id) in built.items():
         if parent_id and parent_id in built:
-            px, py = node_pos.get(parent_id, (0.0, 0.0))
-            cx, cy = node_pos.get(nid, (0.0, 0.0))
+            px, py, *_ = node_pos.get(parent_id, (0.0, 0.0, 0, 0))
+            cx, cy, *_ = node_pos.get(nid, (0.0, 0.0, 0, 0))
             bounds = child_xml.find('bounds')
             if bounds is not None:
                 bounds.set('x', str(int(cx - px)))
@@ -672,15 +684,24 @@ def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_re
         conn.set('target', edge.get('target', ''))
         if edge.get('relation_id'):
             conn.set('archimateRelationship', edge['relation_id'])
-        for v in edge.get('vertices', []):
-            bp = ET.SubElement(conn, 'bendpoint')
-            bp.set('startX', str(int(v.get('x', 0))))
-            bp.set('startY', str(int(v.get('y', 0))))
+        vertices = edge.get('vertices', [])
+        if vertices:
+            sx, sy, sw, sh = node_pos.get(edge.get('source', ''), (0, 0, 120, 55))
+            tx, ty, tw, th = node_pos.get(edge.get('target', ''), (0, 0, 120, 55))
+            src_cx, src_cy = sx + sw / 2, sy + sh / 2
+            tgt_cx, tgt_cy = tx + tw / 2, ty + th / 2
+            for v in vertices:
+                vx, vy = v.get('x', 0), v.get('y', 0)
+                bp = ET.SubElement(conn, 'bendpoint')
+                bp.set('startX', str(int(vx - src_cx)))
+                bp.set('startY', str(int(vy - src_cy)))
+                bp.set('endX',   str(int(vx - tgt_cx)))
+                bp.set('endY',   str(int(vy - tgt_cy)))
 
     for edge, rel_id in user_edges_with_rel:
         entry = built.get(edge.get('source_cell', ''))
         if entry is not None:
-            _add_source_connection(entry[0], edge, rel_id, XSI)
+            _add_source_connection(entry[0], edge, rel_id, XSI, node_pos)
 
 
 def _build_archimate_xml(model):
