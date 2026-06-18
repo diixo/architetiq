@@ -552,7 +552,7 @@ function renderDiagram() {
           body:  { d: notePath, fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
           label: { fontSize:10, fill:'#555',
                    textWrap: { text: n.name, width: n.width - 8, height: n.height - 16, breakWord: false },
-                   textVerticalAnchor:'top', refX:4, refY:6 },
+                   textAnchor:'start', textVerticalAnchor:'top', refX:4, refY:6 },
         },
       })
     } else if (n.type === 'view_ref') {
