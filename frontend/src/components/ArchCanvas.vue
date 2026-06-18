@@ -120,6 +120,7 @@ const containerRef     = ref(null)
 const scrollWrapRef    = ref(null)
 const diagramData      = ref(null)
 const loading          = ref(false)
+let _loadSeq           = 0  // incremented on each loadDiagram/clearDiagram to cancel stale fetches
 const isDirty          = ref(false)
 const currentViewId    = ref(null)
 let graph = null
@@ -694,18 +695,20 @@ async function saveLayout() {
 }
 
 async function loadDiagram(viewId) {
+  const seq = ++_loadSeq
   isDirty.value = false
   currentViewId.value = viewId
   loading.value = true
   diagramData.value = null
   try {
     const r = await fetch(`/api/diagram/${viewId}/`)
+    if (seq !== _loadSeq) return  // cancelled by a newer load or clearDiagram
     if (r.ok) {
       diagramData.value = await r.json()
       renderDiagram()
     }
   } finally {
-    loading.value = false
+    if (seq === _loadSeq) loading.value = false
   }
 }
 
@@ -823,6 +826,7 @@ watch(() => store.activePaletteItem, item => {
 })
 
 function clearDiagram() {
+  _loadSeq++  // cancel any in-flight loadDiagram
   diagramData.value = null
   currentViewId.value = null
   isDirty.value = false
