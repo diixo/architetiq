@@ -9,7 +9,6 @@
           <span style="color: #343a40;">architet</span><span style="color: #712cf9;">IQ</span>
         </div>
         <span class="badge text-bg-light border">v0.1</span>
-        <span v-if="store.isDirty" title="Unsaved changes" style="color:#e67700; font-size:1rem; line-height:1;">●</span>
         <div class="flex-grow-1"></div>
         <!-- Burger button — mobile only -->
         <button
@@ -76,7 +75,7 @@
             <li><a class="dropdown-item" href="#" @click.prevent="onLoadAspice">
               <i class="bi bi-box-seam me-1"></i>Open ASPICE
             </a></li>
-            <li><a class="dropdown-item" href="#" @click.prevent="onSave">Save</a></li>
+            <li><a class="dropdown-item" :class="{ 'fw-semibold': store.isDirty }" href="#" @click.prevent="onSave">Save</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="/api/model/export/" target="_blank">Export .archimate</a></li>
           </ul>

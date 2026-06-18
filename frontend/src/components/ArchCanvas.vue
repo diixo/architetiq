@@ -5,12 +5,11 @@
       <span v-if="loading" class="text-muted ms-1" style="font-size:0.75rem;">Loading…</span>
       <div class="ms-auto d-flex gap-1 align-items-center" v-if="diagramData">
         <!-- Save indicator + button -->
-        <span v-if="isDirty" class="text-muted" style="font-size:0.7rem;">unsaved</span>
         <button
           class="btn btn-sm py-0 px-2"
-          :class="isDirty ? 'btn-warning' : 'btn-light border'"
-          title="Save diagram layout"
-          @click="saveLayout"
+          :class="isDirty ? 'btn-warning fw-semibold' : 'btn-light border'"
+          title="Save"
+          @click="saveAll"
         >
           <i class="bi bi-floppy" style="font-size:0.75rem;"></i>
         </button>
@@ -803,9 +802,6 @@ function applyConnTypeToEdge(edge) {
   isDirty.value = true
 }
 
-// ── Auto-save layout on any change ────────────────────────────────────────────
-watch(isDirty, (dirty) => { if (dirty) saveLayout() })
-
 // ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => store.selected, node => {
   if (node?.type === 'view') loadDiagram(node.id)
@@ -827,6 +823,11 @@ function clearDiagram() {
 
 async function saveCurrentDiagram() {
   await saveLayout()
+}
+
+async function saveAll() {
+  await saveLayout()
+  await store.saveModel()
 }
 
 function onKeyDown(e) {

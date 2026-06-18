@@ -509,12 +509,14 @@ def api_model_new(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
+    import shutil
     with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
         json.dump(_DEFAULT_MODEL, f, ensure_ascii=False, indent=2)
+    shutil.copy2(_MODEL_FILE, _MODEL_FILE + '.bak')
     # Clear all saved diagram layouts so stale data from a previous project doesn't bleed in
     if os.path.isdir(_DIAGRAMS_DIR):
         for fname in os.listdir(_DIAGRAMS_DIR):
-            if fname.endswith('.json'):
+            if fname.endswith('.json') or fname.endswith('.json.bak'):
                 try:
                     os.remove(os.path.join(_DIAGRAMS_DIR, fname))
                 except OSError:
