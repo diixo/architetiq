@@ -13,6 +13,14 @@
         >
           <i class="bi bi-floppy" style="font-size:0.75rem;"></i>
         </button>
+        <button
+          v-if="isDirty"
+          class="btn btn-sm btn-light border py-0 px-2"
+          title="Discard changes"
+          @click="discardChanges"
+        >
+          <i class="bi bi-arrow-counterclockwise" style="font-size:0.75rem;"></i>
+        </button>
         <button class="btn btn-sm btn-light border py-0 px-1" title="Fit" @click="fitView">
           <i class="bi bi-fullscreen" style="font-size:0.75rem;"></i>
         </button>
@@ -828,6 +836,12 @@ async function saveCurrentDiagram() {
 async function saveAll() {
   await saveLayout()
   await store.saveModel()
+}
+
+async function discardChanges() {
+  if (!confirm('Discard unsaved changes?')) return
+  await store.fetchModel()
+  if (currentViewId.value) await loadDiagram(currentViewId.value)
 }
 
 function onKeyDown(e) {
