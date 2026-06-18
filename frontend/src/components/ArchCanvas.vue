@@ -42,7 +42,7 @@
       @dragover.prevent
       @drop="onDrop"
     >
-      <div ref="scrollWrapRef" style="position:absolute;inset:0;overflow:auto;">
+      <div ref="scrollWrapRef" :style="{ position:'absolute', inset:0, overflow: diagramData ? 'auto' : 'hidden' }">
         <div ref="containerRef"></div>
       </div>
       <div
