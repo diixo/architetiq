@@ -1227,6 +1227,67 @@ def api_diagram(request, view_id):
     })
 
 
+def _find_relations_folder(model):
+    """Return the Relations folder node from the model tree, or None."""
+    def walk(node):
+        if node.get('type') == 'node' and node.get('folder_type') == 'relations':
+            return node
+        for child in node.get('children', []):
+            found = walk(child)
+            if found:
+                return found
+        return None
+    return walk(model)
+
+
+def _sync_user_edge_relations(model, new_user_edges, old_user_edges, node_elem_map):
+    """Create model relations for new ArchiMate edges; remove relations for deleted edges.
+
+    Returns new_user_edges with relation_id filled in for newly created relations.
+    """
+    import uuid as _uuid
+
+    # IDs that existed before this save
+    old_rel_ids = {e['relation_id'] for e in old_user_edges if e.get('relation_id')}
+    # IDs still present in the new save payload
+    new_rel_ids = {e['relation_id'] for e in new_user_edges if e.get('relation_id')}
+
+    relations_folder = _find_relations_folder(model)
+    model_modified = False
+
+    # Assign relation_id to new ArchiMate edges (type != 'Connection', no id yet)
+    for edge in new_user_edges:
+        if edge.get('relation_id') or edge.get('type', '') in ('', 'Connection'):
+            continue
+        src_eid = node_elem_map.get(edge.get('source_cell', ''), '')
+        tgt_eid = node_elem_map.get(edge.get('target_cell', ''), '')
+        if not src_eid or not tgt_eid:
+            continue
+        rel_id = str(_uuid.uuid4())
+        edge['relation_id'] = rel_id
+        if relations_folder is not None:
+            relations_folder.setdefault('children', []).append({
+                'id': rel_id, 'name': '', 'type': 'element',
+                'element_type': edge['type'],
+                'source': src_eid, 'target': tgt_eid,
+                'children': [],
+            })
+        model_modified = True
+
+    # Remove model relations for edges that were deleted from the diagram
+    to_remove = old_rel_ids - new_rel_ids
+    if to_remove:
+        def prune(node):
+            node['children'] = [c for c in node.get('children', [])
+                                 if c.get('id') not in to_remove]
+            for child in node['children']:
+                prune(child)
+        prune(model)
+        model_modified = True
+
+    return model_modified
+
+
 def api_diagram_save(request, view_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -1267,22 +1328,33 @@ def api_diagram_save(request, view_id):
             node['parent_id'] = base['parent_id']
         new_nodes.append(node)
 
-    # Drop edges whose source or target was deleted
+    # Drop model edges whose source or target was deleted
     kept_edges = [
         e for e in diagram.get('edges', [])
         if e.get('source') in canvas_ids and e.get('target') in canvas_ids
     ]
 
+    new_user_edges = canvas.get('user_edges', [])
+
+    # Sync Relations folder: create model relations for new ArchiMate edges,
+    # remove relations for edges deleted from the diagram.
+    node_elem_map = {n['id']: n.get('element_id', '') for n in new_nodes}
+    old_user_edges = diagram.get('user_edges', [])
+    model = _load_model()
+    if _sync_user_edge_relations(model, new_user_edges, old_user_edges, node_elem_map):
+        with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
+            json.dump(model, f, ensure_ascii=False, indent=2)
+
     diagram['nodes']      = new_nodes
     diagram['edges']      = kept_edges
-    diagram['user_edges'] = canvas.get('user_edges', [])
+    diagram['user_edges'] = new_user_edges
 
     import shutil
     if os.path.isfile(diag_path):
         shutil.copy2(diag_path, diag_path + '.bak')
     with open(diag_path, 'w', encoding='utf-8') as f:
         json.dump(diagram, f, ensure_ascii=False, indent=2)
-    return JsonResponse({'ok': True})
+    return JsonResponse({'ok': True, 'user_edges': new_user_edges})
 
 
 def _read_archimate_bytes(raw):

@@ -624,7 +624,7 @@ function renderDiagram() {
         id: ue.id || undefined,
         source: { cell: ue.source_cell },
         target: { cell: ue.target_cell },
-        data: { isLoaded: true, type: ue.type },
+        data: { isLoaded: true, isUserEdge: true, type: ue.type, relation_id: ue.relation_id || null },
         ...(ue.vertices?.length ? { vertices: ue.vertices } : {}),
         connector: { name: 'normal' },
         attrs: {
@@ -659,7 +659,24 @@ function extractLayout() {
     if (data.name != null) node.name = data.name
     return node
   })
-  const userEdges = graph.getEdges()
+  // Loaded user_edges (persisted from previous saves) — preserve with updated vertices
+  const loadedUserEdges = graph.getEdges()
+    .filter(e => e.getData()?.isUserEdge)
+    .map(e => {
+      const d = e.getData() || {}
+      const src = e.getSource()
+      const tgt = e.getTarget()
+      return {
+        id: e.id,
+        source_cell: src?.cell ?? null,
+        target_cell: tgt?.cell ?? null,
+        type: d.type || '',
+        relation_id: d.relation_id || null,
+        vertices: e.getVertices() || [],
+      }
+    })
+  // Newly drawn edges this session (no isLoaded flag)
+  const newUserEdges = graph.getEdges()
     .filter(e => !e.getData()?.isLoaded)
     .map(e => {
       const src = e.getSource()
@@ -672,7 +689,7 @@ function extractLayout() {
         vertices: e.getVertices() || [],
       }
     })
-  return { view_id: currentViewId.value, nodes, user_edges: userEdges }
+  return { view_id: currentViewId.value, nodes, user_edges: [...loadedUserEdges, ...newUserEdges] }
 }
 
 async function saveLayout() {
@@ -688,7 +705,20 @@ async function saveLayout() {
       console.error('Save layout HTTP error:', r.status, await r.text())
       return
     }
-    if ((await r.json()).ok) isDirty.value = false
+    const data = await r.json()
+    if (!data.ok) return
+    isDirty.value = false
+    // Update graph edges with relation_ids assigned by the server for newly drawn connections
+    if (data.user_edges && diagramData.value) {
+      diagramData.value.user_edges = data.user_edges
+      for (const ue of data.user_edges) {
+        if (!ue.id || !ue.relation_id) continue
+        const edge = graph.getEdgeById(ue.id)
+        if (edge && !edge.getData()?.isUserEdge) {
+          edge.setData({ isLoaded: true, isUserEdge: true, type: ue.type, relation_id: ue.relation_id })
+        }
+      }
+    }
   } catch (e) {
     console.error('Save layout failed:', e)
   }
