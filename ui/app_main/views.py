@@ -562,13 +562,28 @@ def _load_layout(view_id):
 
 
 def _export_collect(model):
-    """Walk model tree, return {view_id: layout} for all views that have saved layouts."""
+    """Walk model tree, return {view_id: layout} for all views.
+
+    Priority: saved layout JSON → Grafico XML fallback.
+    """
+    elements_index = None  # built lazily if Grafico fallback is needed
+
     result = {}
     def walk(node):
+        nonlocal elements_index
         if node.get('type') == 'view':
-            layout = _load_layout(node['id'])
+            vid = node['id']
+            layout = _load_layout(vid)
             if layout:
-                result[node['id']] = layout
+                result[vid] = layout
+            else:
+                xml_path = _find_diagram_file(vid)
+                if xml_path:
+                    if elements_index is None:
+                        elements_index = _build_elements_index(model)
+                    diagram = _parse_grafico_diagram(xml_path, elements_index)
+                    if diagram:
+                        result[vid] = diagram
         for ch in node.get('children', []):
             walk(ch)
     walk(model)
@@ -666,6 +681,9 @@ def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_re
         else:
             view_xml.append(child_xml)
 
+    # target_id → [conn_id, ...] so we can set targetConnections on each target child
+    target_conn_ids: dict = {}
+
     for edge in diagram.get('edges', []):
         entry = built.get(edge.get('source', ''))
         if entry is None:
@@ -673,11 +691,15 @@ def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_re
         src_xml = entry[0]
         conn = ET.SubElement(src_xml, 'sourceConnection')
         conn.set(f'{{{XSI}}}type', 'archimate:Connection')
-        conn.set('id', edge.get('id', ''))
+        conn_id = edge.get('id', '')
+        conn.set('id', conn_id)
         conn.set('source', edge.get('source', ''))
-        conn.set('target', edge.get('target', ''))
+        tgt_id = edge.get('target', '')
+        conn.set('target', tgt_id)
         if edge.get('relation_id'):
             conn.set('archimateRelationship', edge['relation_id'])
+        if conn_id and tgt_id:
+            target_conn_ids.setdefault(tgt_id, []).append(conn_id)
         vertices = edge.get('vertices', [])
         if vertices:
             sx, sy, sw, sh = node_pos.get(edge.get('source', ''), (0, 0, 120, 55))
@@ -696,6 +718,16 @@ def _append_diagram_children(view_xml, view_id, diagram, XSI, user_edges_with_re
         entry = built.get(edge.get('source_cell', ''))
         if entry is not None:
             _add_source_connection(entry[0], edge, rel_id, XSI, node_pos)
+        conn_id = edge.get('id', '')
+        tgt_id  = edge.get('target_cell', '')
+        if conn_id and tgt_id:
+            target_conn_ids.setdefault(tgt_id, []).append(conn_id)
+
+    # Set targetConnections attribute on each target child element
+    for tgt_id, conn_ids in target_conn_ids.items():
+        entry = built.get(tgt_id)
+        if entry is not None:
+            entry[0].set('targetConnections', ' '.join(conn_ids))
 
 
 def _build_archimate_xml(model):
@@ -740,16 +772,23 @@ def _build_archimate_xml(model):
     if model.get('purpose'):
         ET.SubElement(root, 'purpose').text = model['purpose']
 
-    def build_node(parent, node):
+    def build_node(parent, node, parent_type=None):
         if node['type'] == 'node':
-            ft = node.get('folder_type') or _FOLDER_TYPE.get(node['name'],
-                          node['name'].lower().replace(' ', '_'))
+            explicit = node.get('folder_type')
+            if explicit:
+                ft = explicit
+            elif node.get('name') in _FOLDER_TYPE:
+                ft = _FOLDER_TYPE[node['name']]
+            elif parent_type:
+                ft = parent_type  # subfolders inherit Archi type from their parent
+            else:
+                ft = node['name'].lower().replace(' ', '_')
             folder = ET.SubElement(parent, 'folder')
             folder.set('name', node['name'])
             folder.set('id',   node.get('id', ''))
             folder.set('type', ft)
             for ch in node.get('children', []):
-                build_node(folder, ch)
+                build_node(folder, ch, parent_type=ft)
             if ft == 'relations':
                 for rel_id, rel_type, src_eid, tgt_eid in new_relations:
                     rel = ET.SubElement(folder, 'element')

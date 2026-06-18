@@ -1949,3 +1949,281 @@ class AspiceExportTests(TestCase):
             unresolved, [],
             f"Unresolved archimateRelationship IDs: {unresolved[:5]}..."
         )
+
+    def test_aspice_views_subfolders_have_diagrams_type(self):
+        """All folders nested inside the Views (diagrams) folder must have type='diagrams'.
+
+        Regression test: subfolders without an explicit folder_type used to get
+        a generated slug like 'spl_supply_process_group' instead of 'diagrams',
+        which prevented Archi from recognising views inside them and caused
+        every model element to appear as 'Unused element' in the validator.
+        """
+        import xml.etree.ElementTree as ET
+        _, r_export = self._load_and_export()
+        root = ET.fromstring(r_export.content)
+
+        diagrams_folder = next(
+            (f for f in root.iter('folder') if f.get('type') == 'diagrams'),
+            None,
+        )
+        self.assertIsNotNone(diagrams_folder, "No folder with type='diagrams' in export")
+
+        wrong = []
+        def check(elem):
+            for child in elem:
+                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                if tag == 'folder':
+                    if child.get('type') != 'diagrams':
+                        wrong.append((child.get('name', ''), child.get('type', '')))
+                    check(child)
+        check(diagrams_folder)
+
+        self.assertEqual(
+            wrong, [],
+            f"Subfolders inside Views with wrong type: {wrong[:5]}"
+        )
+
+    def test_aspice_archimate_element_refs_resolved(self):
+        """Every archimateElement ID in diagram children resolves to a model element."""
+        import xml.etree.ElementTree as ET, re
+        _, r_export = self._load_and_export()
+        xml = r_export.content.decode('utf-8')
+        root = ET.fromstring(r_export.content)
+
+        XSI = 'http://www.w3.org/2001/XMLSchema-instance'
+        view_types = {'ArchimateDiagramModel', 'SketchModel', 'CanvasModel'}
+
+        # Collect IDs of model concept elements (not views, not folders)
+        model_element_ids = set()
+        for elem in root.iter():
+            tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
+            if tag != 'element':
+                continue
+            xsi = elem.get(f'{{{XSI}}}type', '').split(':')[-1]
+            if xsi and xsi not in view_types:
+                eid = elem.get('id')
+                if eid:
+                    model_element_ids.add(eid)
+
+        refs = re.findall(r'archimateElement="([^"]+)"', xml)
+        unresolved = [rid for rid in refs if rid not in model_element_ids]
+        self.assertEqual(
+            unresolved, [],
+            f"Unresolved archimateElement IDs ({len(unresolved)} total): {unresolved[:5]}..."
+        )
+
+
+class SubfolderTypeExportTests(TestCase):
+    """Unit tests for folder type inheritance in _build_archimate_xml."""
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR='/nonexistent')
+
+    def _export_model(self, model):
+        with open(self._model_file, 'w') as f:
+            json.dump(model, f)
+        with self._patch():
+            return self.client.get('/api/model/export/').content.decode()
+
+    def test_views_subfolder_without_folder_type_gets_diagrams_type(self):
+        """A subfolder inside Views with no folder_type must export as type='diagrams'.
+
+        Regression: previously generated 'process_group' slug, preventing Archi
+        from loading views nested inside the subfolder.
+        """
+        import xml.etree.ElementTree as ET
+        model = {
+            'name': 'T', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Views', 'type': 'node', 'id': 'fv',
+                'folder_type': 'diagrams', 'children': [{
+                    # Subfolder with no folder_type — simulates Grafico import
+                    'name': 'Process Group', 'type': 'node', 'id': 'fsub',
+                    'children': [{
+                        'id': 'v1', 'name': 'My View', 'type': 'view',
+                        'element_type': 'ArchimateDiagramModel', 'children': [],
+                    }],
+                }],
+            }],
+        }
+        xml = self._export_model(model)
+        root = ET.fromstring(xml.encode())
+        subfolder = next(
+            (f for f in root.iter('folder') if f.get('name') == 'Process Group'),
+            None,
+        )
+        self.assertIsNotNone(subfolder, "Subfolder 'Process Group' not found in export")
+        self.assertEqual(
+            subfolder.get('type'), 'diagrams',
+            f"Subfolder type should be 'diagrams', got {subfolder.get('type')!r}"
+        )
+
+    def test_business_subfolder_without_folder_type_gets_business_type(self):
+        """A subfolder inside Business with no folder_type inherits 'business' type."""
+        import xml.etree.ElementTree as ET
+        model = {
+            'name': 'T', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Business', 'type': 'node', 'id': 'fb',
+                'folder_type': 'business', 'children': [{
+                    'name': 'Sub', 'type': 'node', 'id': 'fsub',
+                    'children': [{
+                        'id': 'e1', 'name': 'Actor', 'type': 'element',
+                        'element_type': 'BusinessActor', 'children': [],
+                    }],
+                }],
+            }],
+        }
+        xml = self._export_model(model)
+        root = ET.fromstring(xml.encode())
+        subfolder = next(
+            (f for f in root.iter('folder') if f.get('name') == 'Sub'),
+            None,
+        )
+        self.assertIsNotNone(subfolder, "Subfolder 'Sub' not found in export")
+        self.assertEqual(
+            subfolder.get('type'), 'business',
+            f"Subfolder type should be 'business', got {subfolder.get('type')!r}"
+        )
+
+    def test_top_level_folder_with_explicit_folder_type_not_overridden(self):
+        """Explicit folder_type on a top-level node is never overridden by inheritance."""
+        import xml.etree.ElementTree as ET
+        model = {
+            'name': 'T', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Motivation', 'type': 'node', 'id': 'fm',
+                'folder_type': 'motivation', 'children': [],
+            }],
+        }
+        xml = self._export_model(model)
+        root = ET.fromstring(xml.encode())
+        folder = next(
+            (f for f in root.iter('folder') if f.get('name') == 'Motivation'),
+            None,
+        )
+        self.assertIsNotNone(folder)
+        self.assertEqual(folder.get('type'), 'motivation')
+
+
+class TargetConnectionsExportTests(TestCase):
+    """Regression tests: exported <child> target elements must have targetConnections attribute.
+
+    Without this attribute Archi cannot resolve arrow endpoints and all connections
+    converge to a single point in the diagram.
+    """
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=False)
+        self._tmpdir = tempfile.mkdtemp()
+        self._model_file = os.path.join(self._tmpdir, 'model.json')
+        self._diagrams_dir = os.path.join(self._tmpdir, 'diagrams')
+        os.makedirs(self._diagrams_dir)
+
+    def _patch(self):
+        return patch.multiple('app_main.views',
+                              _MODEL_FILE=self._model_file,
+                              _DIAGRAMS_DIR=self._diagrams_dir,
+                              _GRAFICO_DIR='/nonexistent')
+
+    def _export(self, model, layout):
+        """Write model + diagram layout, run export, return parsed XML root."""
+        with open(self._model_file, 'w') as f:
+            json.dump(model, f)
+        view_id = layout['view_id']
+        diag_file = os.path.join(self._diagrams_dir, f'{view_id}.json')
+        with open(diag_file, 'w') as f:
+            json.dump(layout, f)
+        with self._patch():
+            resp = self.client.get('/api/model/export/')
+        self.assertEqual(resp.status_code, 200)
+        return ET.fromstring(resp.content)
+
+    def test_target_child_gets_targetConnections_attribute(self):
+        """Target <child> element must have targetConnections listing the connection ID.
+
+        Regression: previously the attribute was never set, causing Archi to render
+        all arrows converging to one point.
+        """
+        model = {
+            'name': 'T', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Views', 'type': 'node', 'id': 'fv',
+                'folder_type': 'diagrams', 'children': [{
+                    'id': 'v1', 'name': 'V', 'type': 'view',
+                    'element_type': 'ArchimateDiagramModel', 'children': [],
+                }],
+            }],
+        }
+        layout = {
+            'view_id': 'v1',
+            'nodes': [
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55, 'parent_id': None},
+                {'id': 'n2', 'type': 'element', 'element_id': 'e2',
+                 'x': 200, 'y': 0, 'width': 120, 'height': 55, 'parent_id': None},
+            ],
+            'edges': [
+                {'id': 'c1', 'source': 'n1', 'target': 'n2',
+                 'relation_id': 'r1', 'vertices': []},
+            ],
+            'user_edges': [],
+        }
+        root = self._export(model, layout)
+        n2 = next((c for c in root.iter('child') if c.get('id') == 'n2'), None)
+        self.assertIsNotNone(n2, "<child id='n2'> not found in export")
+        tc = n2.get('targetConnections')
+        self.assertIsNotNone(tc,
+            "Target <child> is missing 'targetConnections' attribute — "
+            "Archi will render all arrows converging to one point")
+        self.assertIn('c1', tc.split(),
+            f"Connection 'c1' not listed in targetConnections={tc!r}")
+
+    def test_multiple_incoming_connections_all_listed(self):
+        """When two connections target the same element, both IDs appear in targetConnections."""
+        model = {
+            'name': 'T', 'type': 'model', 'id': 'm1',
+            'children': [{
+                'name': 'Views', 'type': 'node', 'id': 'fv',
+                'folder_type': 'diagrams', 'children': [{
+                    'id': 'v1', 'name': 'V', 'type': 'view',
+                    'element_type': 'ArchimateDiagramModel', 'children': [],
+                }],
+            }],
+        }
+        layout = {
+            'view_id': 'v1',
+            'nodes': [
+                {'id': 'n1', 'type': 'element', 'element_id': 'e1',
+                 'x': 0, 'y': 0, 'width': 120, 'height': 55, 'parent_id': None},
+                {'id': 'n2', 'type': 'element', 'element_id': 'e2',
+                 'x': 200, 'y': 0, 'width': 120, 'height': 55, 'parent_id': None},
+                {'id': 'n3', 'type': 'element', 'element_id': 'e3',
+                 'x': 400, 'y': 0, 'width': 120, 'height': 55, 'parent_id': None},
+            ],
+            'edges': [
+                {'id': 'c1', 'source': 'n1', 'target': 'n3',
+                 'relation_id': 'r1', 'vertices': []},
+                {'id': 'c2', 'source': 'n2', 'target': 'n3',
+                 'relation_id': 'r2', 'vertices': []},
+            ],
+            'user_edges': [],
+        }
+        root = self._export(model, layout)
+        n3 = next((c for c in root.iter('child') if c.get('id') == 'n3'), None)
+        self.assertIsNotNone(n3, "<child id='n3'> not found in export")
+        tc_ids = n3.get('targetConnections', '').split()
+        self.assertIn('c1', tc_ids,
+            f"Connection 'c1' not in targetConnections={n3.get('targetConnections')!r}")
+        self.assertIn('c2', tc_ids,
+            f"Connection 'c2' not in targetConnections={n3.get('targetConnections')!r}")
