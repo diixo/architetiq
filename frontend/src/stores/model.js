@@ -11,8 +11,11 @@ export const useModelStore = defineStore('model', () => {
   const activeConnType  = ref('AssociationRelationship')
   const propertiesPanelVisible = ref(false)
   const pendingOpenId   = ref(null)  // folder to expand before editing new child
+  const isDirty = ref(false)
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
+
+  function markDirty() { isDirty.value = true }
 
   function selectPaletteItem(kind, value) {
     activePaletteItem.value = { kind, value }
@@ -33,20 +36,17 @@ export const useModelStore = defineStore('model', () => {
 
   function renameNode(id, newName) {
     const node = findById(id)
-    if (node && newName.trim()) node.name = newName.trim()
-    saveModel()
+    if (node && newName.trim()) { node.name = newName.trim(); markDirty() }
   }
 
   function updateDocumentation(id, doc) {
     const node = findById(id)
-    if (node) node.documentation = doc
-    saveModel()
+    if (node) { node.documentation = doc; markDirty() }
   }
 
   function updateProperties(id, props) {
     const node = findById(id)
-    if (node) node.properties = props
-    saveModel()
+    if (node) { node.properties = props; markDirty() }
   }
 
   function deleteNode(id) {
@@ -58,7 +58,7 @@ export const useModelStore = defineStore('model', () => {
     }
     if (model.value) removeFrom(model.value)
     if (selected.value?.id === id) selected.value = null
-    saveModel()
+    markDirty()
   }
 
   async function _addChild(parentId, newNode) {
@@ -78,6 +78,7 @@ export const useModelStore = defineStore('model', () => {
 
   async function addChildFolder(parentId) {
     await _addChild(parentId, { id: genId(), name: 'New Folder', type: 'node', children: [] })
+    markDirty()
   }
 
   async function addView(parentId, viewType = 'ArchimateDiagramModel') {
@@ -85,7 +86,7 @@ export const useModelStore = defineStore('model', () => {
     const label = viewType === 'SketchModel' ? 'New Sketch' : 'New View'
     await _addChild(parentId, { id, name: label, type: 'view',
       element_type: viewType, documentation: '', children: [] })
-    saveModel()
+    markDirty()
   }
 
   async function addElement(parentId, elementType) {
@@ -96,7 +97,7 @@ export const useModelStore = defineStore('model', () => {
       type: 'element', element_type: elementType,
       documentation: '', children: [],
     })
-    saveModel()
+    markDirty()
   }
 
   function csrfToken() {
@@ -129,6 +130,7 @@ export const useModelStore = defineStore('model', () => {
     try {
       const r = await fetch('/api/model/')
       model.value = migrateFolderTypes(await r.json())
+      isDirty.value = false
     } catch (e) {
       error.value = e.message
     } finally {
@@ -182,6 +184,7 @@ export const useModelStore = defineStore('model', () => {
       },
       body: JSON.stringify(model.value),
     })
+    if (r.ok) isDirty.value = false
     return r.ok ? (await r.json()) : null
   }
 
@@ -263,5 +266,6 @@ export const useModelStore = defineStore('model', () => {
     loadAspice, resetModel, saveModel, renameNode, deleteNode, addChildFolder, addElement, addView,
     updateDocumentation, updateProperties,
     propertiesPanelVisible,
+    isDirty, markDirty,
   }
 })

@@ -439,17 +439,17 @@ function initGraph() {
   graph.on('edge:contextmenu', ({ edge, e }) => showCtxMenu(edge, e))
 
   // Mark dirty on any structural change
-  graph.on('node:moved',         () => { isDirty.value = true })
-  graph.on('node:resized',       () => { isDirty.value = true })
-  graph.on('node:removed',       () => { isDirty.value = true })
+  graph.on('node:moved',         () => { isDirty.value = true; store.markDirty() })
+  graph.on('node:resized',       () => { isDirty.value = true; store.markDirty() })
+  graph.on('node:removed',       () => { isDirty.value = true; store.markDirty() })
   graph.on('edge:connected',     ({ edge }) => applyConnTypeToEdge(edge))
   graph.on('edge:added',         ({ edge }) => {
-    if (!edge.getData()?.isLoaded) isDirty.value = true
+    if (!edge.getData()?.isLoaded) { isDirty.value = true; store.markDirty() }
   })
   graph.on('edge:removed',       ({ edge }) => {
-    if (!edge.getData()?.isLoaded) isDirty.value = true
+    if (!edge.getData()?.isLoaded) { isDirty.value = true; store.markDirty() }
   })
-  graph.on('edge:change:vertices', () => { isDirty.value = true })
+  graph.on('edge:change:vertices', () => { isDirty.value = true; store.markDirty() })
   graph.on('scale', () => { _resizeGraph() })
 
   resizeObserver = new ResizeObserver(() => { _resizeGraph() })
@@ -818,20 +818,15 @@ watch(() => store.activePaletteItem, item => {
     containerRef.value.style.cursor = item?.kind === 'conn' ? 'crosshair' : ''
 })
 
-async function clearDiagram() {
-  if (currentViewId.value) {
-    try {
-      await fetch(`/api/diagram/${currentViewId.value}/save/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
-        body: JSON.stringify({ view_id: currentViewId.value, nodes: [], user_edges: [] }),
-      })
-    } catch (e) { /* ignore */ }
-  }
+function clearDiagram() {
   diagramData.value = null
   currentViewId.value = null
   isDirty.value = false
   graph?.clearCells()
+}
+
+async function saveCurrentDiagram() {
+  await saveLayout()
 }
 
 function onKeyDown(e) {
@@ -843,7 +838,7 @@ function onKeyDown(e) {
   selectedCanvasCell = null
 }
 
-defineExpose({ clearDiagram })
+defineExpose({ clearDiagram, saveCurrentDiagram })
 
 onMounted(() => {
   initGraph()

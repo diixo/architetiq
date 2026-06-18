@@ -529,7 +529,10 @@ def api_model_save(request):
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    import shutil
     os.makedirs(os.path.dirname(_MODEL_FILE), exist_ok=True)
+    if os.path.isfile(_MODEL_FILE):
+        shutil.copy2(_MODEL_FILE, _MODEL_FILE + '.bak')
     with open(_MODEL_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return JsonResponse({'ok': True, 'name': data.get('name', '')})
@@ -1222,6 +1225,9 @@ def api_diagram_save(request, view_id):
     diagram['edges']      = kept_edges
     diagram['user_edges'] = canvas.get('user_edges', [])
 
+    import shutil
+    if os.path.isfile(diag_path):
+        shutil.copy2(diag_path, diag_path + '.bak')
     with open(diag_path, 'w', encoding='utf-8') as f:
         json.dump(diagram, f, ensure_ascii=False, indent=2)
     return JsonResponse({'ok': True})

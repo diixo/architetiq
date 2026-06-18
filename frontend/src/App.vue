@@ -9,6 +9,7 @@
           <span style="color: #343a40;">architet</span><span style="color: #712cf9;">IQ</span>
         </div>
         <span class="badge text-bg-light border">v0.1</span>
+        <span v-if="store.isDirty" title="Unsaved changes" style="color:#e67700; font-size:1rem; line-height:1;">●</span>
         <div class="flex-grow-1"></div>
         <!-- Burger button — mobile only -->
         <button
@@ -132,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useModelStore } from './stores/model'
 import ModelTree from './components/ModelTree.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
@@ -145,6 +146,15 @@ const fileInputRef = ref(null)
 const canvasRef = ref(null)
 const toast = ref('')
 let toastTimer = null
+
+function handleBeforeUnload(e) {
+  if (store.isDirty) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload))
+onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload))
 
 function showToast(msg) {
   toast.value = msg
@@ -175,6 +185,7 @@ async function onLoadAspice() {
 }
 
 async function onSave() {
+  await canvasRef.value?.saveCurrentDiagram()
   const result = await store.saveModel()
   if (result?.ok) showToast(`Saved: ${result.name}`)
 }
