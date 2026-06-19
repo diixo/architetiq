@@ -1321,7 +1321,7 @@ def api_diagram_save(request, view_id):
             'type':         base.get('type') or n.get('node_type', 'element'),
             'element_id':   base.get('element_id') or n.get('element_id', ''),
             'element_type': base.get('element_type') or n.get('element_type', ''),
-            'name':         base.get('name') or n.get('name', ''),
+            'name':         n.get('name') or base.get('name', ''),
             'x': n['x'], 'y': n['y'], 'width': n['width'], 'height': n['height'],
         }
         if 'parent_id' in base:

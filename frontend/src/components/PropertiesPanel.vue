@@ -44,7 +44,7 @@
               <input
                 class="form-control form-control-sm"
                 v-model="editName"
-                @blur="saveName"
+                @input="onNameInput"
                 @keydown.enter.prevent="saveName"
               />
             </div>
@@ -117,19 +117,33 @@ const tabs = [
 ]
 const activeTab = ref('main')
 
-const editName  = ref('')
-const editDoc   = ref('')
-const editProps = ref([])
+const editName      = ref('')
+const editDoc       = ref('')
+const editProps     = ref([])
+const nameUserInput = ref(false)  // true only when user actually typed
 
 watch(node, (n) => {
+  nameUserInput.value = false  // reset: programmatic change, not user input
   activeTab.value = 'main'
   editName.value  = n?.name         ?? ''
   editDoc.value   = n?.documentation ?? ''
   editProps.value = (n?.properties  ?? []).map(p => ({ ...p }))
 }, { immediate: true })
 
+function onNameInput() {
+  nameUserInput.value = true
+  saveName()
+}
+
 function saveName() {
-  if (node.value) store.renameNode(node.value.id, editName.value)
+  console.log('[PP] saveName called, nameUserInput:', nameUserInput.value, 'node:', node.value?.id, 'editName:', editName.value)
+  if (!nameUserInput.value) return
+  if (!node.value) return
+  const trimmed = editName.value.trim()
+  console.log('[PP] trimmed:', trimmed, 'vs node.name:', node.value.name)
+  if (!trimmed || trimmed === node.value.name) return
+  console.log('[PP] calling renameNode', node.value.id, trimmed)
+  store.renameNode(node.value.id, trimmed)
 }
 
 function saveDoc() {

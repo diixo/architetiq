@@ -42,7 +42,7 @@
             <a class="nav-link" href="#" @click.prevent="triggerOpen"><i class="bi bi-folder2-open me-2"></i>Open</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" @click.prevent="onSave"><i class="bi bi-save me-2"></i>Save</a>
+            <a class="nav-link" :class="{ 'fw-semibold text-warning': store.isDirty }" href="#" @click.prevent="onSave"><i class="bi bi-save me-2"></i>Save</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/api/model/export/" target="_blank"><i class="bi bi-box-arrow-up me-2"></i>Export .archimate</a>

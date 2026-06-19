@@ -203,6 +203,66 @@ describe('findById', () => {
   })
 })
 
+// ── renameNode ────────────────────────────────────────────────────────────────
+
+describe('renameNode', () => {
+  beforeEach(() => {
+    const store = useModelStore()
+    store.model = {
+      id: 'root', name: 'Model', type: 'model',
+      children: [{
+        id: 'f1', name: 'Business', type: 'node',
+        children: [
+          { id: 'e1', name: 'Customer', type: 'element', element_type: 'BusinessActor', children: [] },
+        ]
+      }]
+    }
+  })
+
+  it('renames a model-tree node and marks model dirty', () => {
+    const store = useModelStore()
+    store.renameNode('e1', 'Client')
+    expect(store.findById('e1').name).toBe('Client')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('ignores empty/whitespace name for model-tree node', () => {
+    const store = useModelStore()
+    store.renameNode('e1', '   ')
+    expect(store.findById('e1').name).toBe('Customer')
+    expect(store.isDirty).toBe(false)
+  })
+
+  it('canvas-level node (unknown id): sets diagramRenameSignal with id and name', () => {
+    const store = useModelStore()
+    store.renameNode('canvas-uuid-99', 'NewGroupName')
+    expect(store.diagramRenameSignal).toEqual({ id: 'canvas-uuid-99', name: 'NewGroupName' })
+  })
+
+  it('canvas-level node: each rename creates a new signal reference', () => {
+    const store = useModelStore()
+    store.renameNode('canvas-uuid-99', 'First')
+    const sig1 = store.diagramRenameSignal
+    store.renameNode('canvas-uuid-99', 'Second')
+    const sig2 = store.diagramRenameSignal
+    expect(sig1).not.toBe(sig2)
+    expect(sig2.name).toBe('Second')
+  })
+
+  it('canvas-level node: marks model dirty', () => {
+    const store = useModelStore()
+    store.renameNode('canvas-uuid-99', 'NewGroupName')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('canvas-level node: ignores empty/whitespace name', () => {
+    const store = useModelStore()
+    store.renameNode('canvas-uuid-99', '  ')
+    expect(store.diagramRenameSignal).toBeNull()
+    expect(store.isDirty).toBe(false)
+  })
+})
+
 // ── New does not touch server (integration) ───────────────────────────────────
 
 describe('New → Save workflow', () => {

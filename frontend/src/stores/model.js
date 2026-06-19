@@ -12,6 +12,7 @@ export const useModelStore = defineStore('model', () => {
   const propertiesPanelVisible = ref(false)
   const pendingOpenId   = ref(null)  // folder to expand before editing new child
   const isDirty = ref(false)
+  const diagramRenameSignal = ref(null)  // { id, name } — replaced on each canvas-node rename
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
 
@@ -36,7 +37,16 @@ export const useModelStore = defineStore('model', () => {
 
   function renameNode(id, newName) {
     const node = findById(id)
-    if (node && newName.trim()) { node.name = newName.trim(); markDirty() }
+    console.log('[store] renameNode', id, newName, 'found:', !!node)
+    if (node && newName.trim()) {
+      node.name = newName.trim()
+      markDirty()
+    } else if (newName.trim()) {
+      // Canvas-level node (DiagramGroup, Note) — not in model tree; signal watcher in ArchCanvas
+      console.log('[store] setting diagramRenameSignal', { id, name: newName.trim() })
+      diagramRenameSignal.value = { id, name: newName.trim() }
+      markDirty()
+    }
   }
 
   function updateDocumentation(id, doc) {
@@ -259,7 +269,7 @@ export const useModelStore = defineStore('model', () => {
   }
 
   return {
-    model, selected, loading, error, filterQuery, editingNodeId,
+    model, selected, loading, error, filterQuery, editingNodeId, diagramRenameSignal,
     fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
     activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
     pendingOpenId,

@@ -365,6 +365,13 @@ const NOTE_MARKUP = [
 // ── Group rendering helpers ───────────────────────────────────────────────────
 const TAB_H = 18  // GroupFigure.java TOPBAR_HEIGHT = 18
 
+// Matches GroupFigure.java: base = width/2, expand to textWidth+8 if needed, cap at full width
+function groupTabWidth(name, groupWidth) {
+  const base = Math.floor(groupWidth / 2)
+  const textW = Math.round((name || '').length * 7)  // ~7px per char at 11px bold
+  return Math.min(Math.max(base, textW + 8), groupWidth)
+}
+
 function darkenColor(hex) {
   if (!hex || hex.length < 7) return '#cccccc'
   const r = parseInt(hex.slice(1, 3), 16)
@@ -483,7 +490,7 @@ function renderDiagram() {
 
     if (n.type === 'group') {
       const fillColor = n.fill_color || '#f0f0f0'
-      const tabW = Math.floor(n.width / 2)
+      const tabW = groupTabWidth(n.name, n.width)
       graph.addNode({
         id: n.id, x: n.x, y: n.y, width: n.width, height: n.height,
         zIndex: 0,
@@ -504,17 +511,16 @@ function renderDiagram() {
             fill: darkenColor(fillColor), stroke: 'none',
           },
           outline: {
-            d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} H ${n.width} V ${n.height} H 0 Z`,
+            d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${n.width} V ${n.height} H 0 Z`,
             fill: 'none', stroke: '#999', strokeWidth: 1,
           },
           label: {
             text: n.name,
-            x: 6, y: TAB_H / 2,
+            x: 4, y: TAB_H - 8,
             textAnchor: 'start',
-            textVerticalAnchor: 'middle',
             fontSize: 11, fontWeight: 600,
             fill: labelColor(fillColor),
-            textWrap: { text: n.name, width: tabW - 12, ellipsis: true },
+            textWrap: { text: n.name, width: n.width - 8, ellipsis: true },
           },
         },
       })
@@ -558,7 +564,7 @@ function renderDiagram() {
         zIndex: 1, markup: NOTE_MARKUP,
         data: { type: 'note', name: n.name, id: n.id },
         attrs: {
-          body:  { d: notePath, fill:'#fffde7', stroke:'#ccc', strokeWidth:1 },
+          body:  { d: notePath, fill:'#ffffff', stroke:'#ccc', strokeWidth:1 },
           label: { fontSize:10, fill:'#555',
                    textWrap: { text: n.name, width: n.width - 8, height: n.height - 16, breakWord: false },
                    textAnchor:'start', textVerticalAnchor:'top', refX:4, refY:6 },
@@ -774,12 +780,28 @@ function onDrop(e) {
 
   const id   = crypto.randomUUID ? crypto.randomUUID()
     : `new-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const name = humanizeType(elementType)
-  const w = 120, h = 55
+  const DROP_NAMES = { DiagramGroup: 'Group' }
+  const name = DROP_NAMES[elementType] ?? humanizeType(elementType)
+  const w = elementType === 'DiagramGroup' ? 400 : 120
+  const h = elementType === 'DiagramGroup' ? 140 : 55
 
-  if (elementType === 'DiagramGroup') {
+  if (elementType === 'Note') {
+    const cut = 13
+    const notePath = `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`
+    graph.addNode({
+      id, x: x - w/2, y: y - h/2, width: w, height: h,
+      zIndex: 1, markup: NOTE_MARKUP,
+      data: { type: 'note', name: '', id },
+      attrs: {
+        body:  { d: notePath, fill: '#ffffff', stroke: '#ccc', strokeWidth: 1 },
+        label: { fontSize: 10, fill: '#555',
+                 textWrap: { text: '', width: w - 8, height: h - 16, breakWord: false },
+                 textAnchor: 'start', textVerticalAnchor: 'top', refX: 4, refY: 6 },
+      },
+    })
+  } else if (elementType === 'DiagramGroup') {
     const fillColor = nodeColor('DiagramGroup')
-    const tabW = Math.floor(w / 2)
+    const tabW = groupTabWidth(name, w)
     graph.addNode({
       id, x: x - w/2, y: y - h/2, width: w, height: h,
       zIndex: 0,
@@ -795,12 +817,12 @@ function onDrop(e) {
                      fill: fillColor, stroke: 'none' },
         tab_fill:  { x: 0, y: 0, width: tabW, height: TAB_H,
                      fill: darkenColor(fillColor), stroke: 'none' },
-        outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} H ${w} V ${h} H 0 Z`,
+        outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z`,
                      fill: 'none', stroke: '#999', strokeWidth: 1 },
-        label:     { text: name, x: 6, y: TAB_H / 2,
-                     textAnchor: 'start', textVerticalAnchor: 'middle',
+        label:     { text: name, x: 4, y: TAB_H - 8,
+                     textAnchor: 'start',
                      fontSize: 11, fontWeight: 600, fill: labelColor(fillColor),
-                     textWrap: { text: name, width: tabW - 12, ellipsis: true } },
+                     textWrap: { text: name, width: w - 8, ellipsis: true } },
       },
     })
   } else {
@@ -848,6 +870,22 @@ watch(() => store.selected, node => {
   if (node?.type === 'view') loadDiagram(node.id)
   // Non-view selection (element, group, note) — only updates PropertiesPanel,
   // canvas stays showing the current diagram
+})
+
+watch(() => store.diagramRenameSignal, (signal) => {
+  console.log('[canvas] diagramRenameSignal watcher fired', signal)
+  if (!signal || !graph) return
+  const xNode = graph.getCellById(signal.id)
+  console.log('[canvas] xNode found:', !!xNode, 'for id:', signal.id)
+  if (!xNode?.isNode()) return
+  const { width, height } = xNode.getSize()
+  const tabW = groupTabWidth(signal.name, width)
+  xNode.setData({ ...xNode.getData(), name: signal.name })
+  xNode.attr('label/text', signal.name)
+  xNode.attr('label/textWrap', { text: signal.name, width: width - 8, ellipsis: true })
+  xNode.attr('tab_fill/width', tabW)
+  xNode.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${width} V ${height} H 0 Z`)
+  isDirty.value = true
 })
 
 watch(() => store.activePaletteItem, item => {

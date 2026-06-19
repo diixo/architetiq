@@ -30,7 +30,7 @@ export const FOLDER_ELEMENTS = {
     'WorkPackage', 'Deliverable', 'ImplementationEvent', 'Plateau', 'Gap',
   ],
   other: [
-    'Location', 'Grouping', 'Junction',
+    'Location', 'Grouping', 'Junction', 'Note', 'DiagramGroup',
   ],
   // Relations are created by drawing on canvas, not via New menu
   relations: [],
