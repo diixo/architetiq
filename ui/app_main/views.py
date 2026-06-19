@@ -1326,6 +1326,9 @@ def api_diagram_save(request, view_id):
         }
         if 'parent_id' in base:
             node['parent_id'] = base['parent_id']
+        fill_color = n.get('fill_color') or base.get('fill_color')
+        if fill_color:
+            node['fill_color'] = fill_color
         new_nodes.append(node)
 
     # Drop model edges whose source or target was deleted

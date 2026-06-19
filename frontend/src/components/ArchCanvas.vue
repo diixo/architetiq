@@ -98,16 +98,23 @@ function _addHandles(node) {
   if (!view) return
   const { width, height } = node.getSize()
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  g.setAttribute('style', 'pointer-events:none;')
+  // dashed bounding rectangle — inline style ensures fill:none is never overridden by CSS
+  const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  box.setAttribute('x', '-1')
+  box.setAttribute('y', '-1')
+  box.setAttribute('width',  String(width  + 2))
+  box.setAttribute('height', String(height + 2))
+  box.setAttribute('style', 'fill:none;stroke:#0d6efd;stroke-width:1.5;stroke-dasharray:5 3;')
+  g.appendChild(box)
+  // 8 handle squares at corners + midpoints
   _NHP.forEach(([rx, ry]) => {
     const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    r.setAttribute('x', String(rx * width - _NHH))
-    r.setAttribute('y', String(ry * height - _NHH))
+    r.setAttribute('x',      String(rx * width  - _NHH))
+    r.setAttribute('y',      String(ry * height - _NHH))
     r.setAttribute('width',  String(_NHS))
     r.setAttribute('height', String(_NHS))
-    r.setAttribute('fill', '#0d6efd')
-    r.setAttribute('stroke', '#fff')
-    r.setAttribute('stroke-width', '1')
-    r.setAttribute('pointer-events', 'none')
+    r.setAttribute('style', 'fill:#0d6efd;stroke:#fff;stroke-width:1;')
     g.appendChild(r)
   })
   const container = view.container ?? view.el
@@ -166,22 +173,8 @@ function onCtxOutside(e) {
 }
 
 // ── Node selection ────────────────────────────────────────────────────────────
-function _strokeSel(node) {
-  return node?.getData?.()?.type === 'group' ? 'outline' : 'body'
-}
-
-function _nodeDefaultStroke(d) {
-  if (d?.type === 'group') return '#999'
-  if (d?.type === 'note')  return '#ccc'
-  if (d?.type === 'view')  return '#1565c0'
-  return '#888'
-}
-
 function deselectNode() {
   if (!selectedCanvasCell?.isNode?.()) return
-  const sel = _strokeSel(selectedCanvasCell)
-  selectedCanvasCell.attr(`${sel}/stroke`, _nodeDefaultStroke(selectedCanvasCell.getData()))
-  selectedCanvasCell.attr(`${sel}/strokeWidth`, 1)
   _removeHandles()
 }
 
@@ -190,9 +183,6 @@ function selectNode(node) {
   deselectEdge()
   deselectNode()
   selectedCanvasCell = node
-  const sel = _strokeSel(node)
-  node.attr(`${sel}/stroke`, '#0d6efd')
-  node.attr(`${sel}/strokeWidth`, 2)
   _addHandles(node)
 }
 
@@ -500,7 +490,7 @@ function renderDiagram() {
           { tagName: 'path',  selector: 'outline'   },
           { tagName: 'text',  selector: 'label'     },
         ],
-        data: { type: 'group', name: n.name, id: n.id },
+        data: { type: 'group', name: n.name, id: n.id, fill_color: fillColor },
         attrs: {
           body_fill: {
             x: 0, y: TAB_H, width: n.width, height: Math.max(0, n.height - TAB_H),
@@ -663,6 +653,7 @@ function extractLayout() {
     if (data.element_id) node.element_id = data.element_id
     if (data.element_type) node.element_type = data.element_type
     if (data.name != null) node.name = data.name
+    if (data.fill_color != null) node.fill_color = data.fill_color
     return node
   })
   // Loaded user_edges (persisted from previous saves) — preserve with updated vertices
@@ -811,7 +802,7 @@ function onDrop(e) {
         { tagName: 'path',  selector: 'outline'   },
         { tagName: 'text',  selector: 'label'     },
       ],
-      data: { type: 'group', name, id },
+      data: { type: 'group', name, id, fill_color: fillColor },
       attrs: {
         body_fill: { x: 0, y: TAB_H, width: w, height: Math.max(0, h - TAB_H),
                      fill: fillColor, stroke: 'none' },
@@ -873,15 +864,12 @@ watch(() => store.selected, node => {
 })
 
 watch(() => store.diagramRenameSignal, (signal) => {
-  console.log('[canvas] diagramRenameSignal watcher fired', signal)
   if (!signal || !graph) return
   const xNode = graph.getCellById(signal.id)
-  console.log('[canvas] xNode found:', !!xNode, 'for id:', signal.id)
   if (!xNode?.isNode()) return
   const { width, height } = xNode.getSize()
   const tabW = groupTabWidth(signal.name, width)
   xNode.setData({ ...xNode.getData(), name: signal.name })
-  xNode.attr('label/text', signal.name)
   xNode.attr('label/textWrap', { text: signal.name, width: width - 8, ellipsis: true })
   xNode.attr('tab_fill/width', tabW)
   xNode.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${width} V ${height} H 0 Z`)

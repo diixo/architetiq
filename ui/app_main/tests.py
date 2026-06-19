@@ -1242,6 +1242,46 @@ class DiagramSaveTests(TestCase):
         self.assertEqual(len(saved['user_edges']), 1)
         self.assertEqual(saved['user_edges'][0]['id'], 'new')
 
+    def test_save_preserves_fill_color_from_existing_diagram(self):
+        """fill_color is preserved when canvas re-saves an existing group (geometry-only payload)."""
+        initial = {
+            'id': 'v1', 'name': 'V', 'documentation': '',
+            'nodes': [
+                {'id': 'g1', 'type': 'group', 'name': 'My Group',
+                 'fill_color': '#ffeeaa',
+                 'x': 0, 'y': 0, 'width': 300, 'height': 200},
+            ],
+            'edges': [], 'user_edges': [],
+        }
+        with open(os.path.join(self._diagrams_dir, 'v1.json'), 'w') as f:
+            json.dump(initial, f)
+
+        # Canvas sends only geometry — fill_color must be kept from existing diagram
+        payload = {'view_id': 'v1', 'nodes': [
+            {'id': 'g1', 'x': 10, 'y': 10, 'width': 300, 'height': 200},
+        ], 'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/v1/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved = self._diag('v1')
+        g1 = next(n for n in saved['nodes'] if n['id'] == 'g1')
+        self.assertEqual(g1.get('fill_color'), '#ffeeaa')
+
+    def test_save_accepts_fill_color_from_canvas_payload(self):
+        """fill_color in canvas payload is written to diagram JSON for new group nodes."""
+        payload = {'view_id': 'new-view', 'nodes': [
+            {'id': 'g1', 'x': 0, 'y': 0, 'width': 300, 'height': 200,
+             'node_type': 'group', 'name': 'New Group', 'fill_color': '#aabbcc'},
+        ], 'user_edges': []}
+        with self._patch():
+            self.client.post('/api/diagram/new-view/save/',
+                             json.dumps(payload), content_type='application/json')
+
+        saved = self._diag('new-view')
+        g1 = next(n for n in saved['nodes'] if n['id'] == 'g1')
+        self.assertEqual(g1.get('fill_color'), '#aabbcc')
+
     def test_save_requires_post(self):
         """GET to /api/diagram/<id>/save/ returns 405."""
         with self._patch():
@@ -1501,6 +1541,31 @@ class ExportWithDiagramDataTests(TestCase):
         self.assertIsNotNone(bounds)
         self.assertEqual(bounds.get('x'), '50', "x should be relative to group (150-100=50)")
         self.assertEqual(bounds.get('y'), '30', "y should be relative to group (130-100=30)")
+
+    def test_export_group_has_fill_color_attribute(self):
+        """Group node with fill_color in diagram JSON exports with fillColor attribute."""
+        import xml.etree.ElementTree as ET
+        self._write_model()
+        self._write_diagram('v1', {
+            'id': 'v1', 'name': 'Overview', 'documentation': '',
+            'nodes': [
+                {'id': 'g1', 'type': 'group', 'name': 'Colored Group',
+                 'fill_color': '#ffeeaa',
+                 'x': 10, 'y': 10, 'width': 300, 'height': 200},
+            ],
+            'edges': [], 'user_edges': [],
+        })
+        with self._patch():
+            raw = self.client.get('/api/model/export/').content
+        root = ET.fromstring(raw)
+        group = next(
+            (e for e in root.iter()
+             if e.get('{http://www.w3.org/2001/XMLSchema-instance}type') == 'archimate:Group'),
+            None,
+        )
+        self.assertIsNotNone(group, "Group <child> not found in export")
+        self.assertEqual(group.get('fillColor'), '#ffeeaa',
+                         f"fillColor should be '#ffeeaa', got {group.get('fillColor')!r}")
 
     def test_export_relation_with_source_target(self):
         """Relation element with source/target in model exports those attributes."""

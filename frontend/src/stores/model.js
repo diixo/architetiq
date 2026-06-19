@@ -37,13 +37,11 @@ export const useModelStore = defineStore('model', () => {
 
   function renameNode(id, newName) {
     const node = findById(id)
-    console.log('[store] renameNode', id, newName, 'found:', !!node)
     if (node && newName.trim()) {
       node.name = newName.trim()
       markDirty()
     } else if (newName.trim()) {
       // Canvas-level node (DiagramGroup, Note) — not in model tree; signal watcher in ArchCanvas
-      console.log('[store] setting diagramRenameSignal', { id, name: newName.trim() })
       diagramRenameSignal.value = { id, name: newName.trim() }
       markDirty()
     }

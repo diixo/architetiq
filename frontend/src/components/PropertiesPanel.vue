@@ -136,13 +136,10 @@ function onNameInput() {
 }
 
 function saveName() {
-  console.log('[PP] saveName called, nameUserInput:', nameUserInput.value, 'node:', node.value?.id, 'editName:', editName.value)
   if (!nameUserInput.value) return
   if (!node.value) return
   const trimmed = editName.value.trim()
-  console.log('[PP] trimmed:', trimmed, 'vs node.name:', node.value.name)
   if (!trimmed || trimmed === node.value.name) return
-  console.log('[PP] calling renameNode', node.value.id, trimmed)
   store.renameNode(node.value.id, trimmed)
 }
 
