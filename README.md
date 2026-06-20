@@ -8,13 +8,7 @@ py ui/manage.py runserver
 ```
 
 
-### UI based on Django:
-```bash
-http://127.0.0.1:8000/django
-```
-
-
-### Functionality features:
+### Functional process features:
 
 * Strategy, Business, Application, Technology & Physical, Motivation, Implementation & Migration, Other, Relations, Views
 
