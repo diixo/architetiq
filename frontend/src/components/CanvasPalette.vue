@@ -111,8 +111,11 @@ function setTool(tool) {
   emit('connection-type-changed', tool === 'connect' ? selectedRelType.value : null)
 }
 
+const TREE_FOLDER_OVERRIDE = { Note: 'other' }
+
 function onDragStart(e, elementType, folderType) {
-  e.dataTransfer.setData('application/archimate-element', JSON.stringify({ elementType, folderType }))
+  const treeFolderType = TREE_FOLDER_OVERRIDE[elementType] ?? folderType
+  e.dataTransfer.setData('application/archimate-element', JSON.stringify({ elementType, folderType: treeFolderType }))
   e.dataTransfer.effectAllowed = 'copy'
 }
 
