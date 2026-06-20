@@ -560,7 +560,10 @@ function renderDiagram() {
     nodes.filter(n => n.parent_id).map(n => [n.id, n.parent_id])
   )
 
+  const deleted = store.pendingDeleteIds
   for (const n of nodes) {
+    if (deleted.has(n.element_id) || deleted.has(n.id)) continue
+
     const wrap = { width: n.width - 8, height: n.height - 6, ellipsis: true }
 
     if (n.type === 'group') {

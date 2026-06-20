@@ -263,6 +263,96 @@ describe('renameNode', () => {
   })
 })
 
+// ── deleteNode ────────────────────────────────────────────────────────────────
+
+describe('deleteNode', () => {
+  beforeEach(() => {
+    const store = useModelStore()
+    store.model = {
+      id: 'root', name: 'Model', type: 'model',
+      children: [{
+        id: 'f1', name: 'Business', type: 'node',
+        children: [
+          { id: 'e1', name: 'Customer', type: 'element', element_type: 'BusinessActor', children: [] },
+          { id: 'e2', name: 'Order Process', type: 'element', element_type: 'BusinessProcess', children: [] },
+        ]
+      }]
+    }
+  })
+
+  it('removes the node from the tree', () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.findById('e1')).toBeNull()
+  })
+
+  it('adds deleted id to pendingDeleteIds', () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.pendingDeleteIds.has('e1')).toBe(true)
+  })
+
+  it('accumulates multiple deletions in pendingDeleteIds', () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    store.deleteNode('e2')
+    expect(store.pendingDeleteIds.has('e1')).toBe(true)
+    expect(store.pendingDeleteIds.has('e2')).toBe(true)
+  })
+
+  it('emits diagramDeleteSignal with the deleted id', () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.diagramDeleteSignal).toEqual({ id: 'e1' })
+  })
+
+  it('marks model dirty', () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('clears selected when the deleted node was selected', () => {
+    const store = useModelStore()
+    store.selectNode(store.findById('e1'))
+    store.deleteNode('e1')
+    expect(store.selected).toBeNull()
+  })
+
+  it('does not clear selected when a different node is deleted', () => {
+    const store = useModelStore()
+    store.selectNode(store.findById('e2'))
+    store.deleteNode('e1')
+    expect(store.selected?.id).toBe('e2')
+  })
+
+  it('pendingDeleteIds is cleared after fetchModel', async () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.pendingDeleteIds.size).toBe(1)
+    mockFetchOk({ name: 'Model', type: 'model', children: [] })
+    await store.fetchModel()
+    expect(store.pendingDeleteIds.size).toBe(0)
+  })
+
+  it('pendingDeleteIds is cleared after successful saveModel', async () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    expect(store.pendingDeleteIds.size).toBe(1)
+    mockFetchOk({ ok: true, name: 'Model' })
+    await store.saveModel()
+    expect(store.pendingDeleteIds.size).toBe(0)
+  })
+
+  it('pendingDeleteIds is NOT cleared when saveModel fails', async () => {
+    const store = useModelStore()
+    store.deleteNode('e1')
+    global.fetch = vi.fn().mockResolvedValue({ ok: false })
+    await store.saveModel()
+    expect(store.pendingDeleteIds.has('e1')).toBe(true)
+  })
+})
+
 // ── New does not touch server (integration) ───────────────────────────────────
 
 describe('New → Save workflow', () => {

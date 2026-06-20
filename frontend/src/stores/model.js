@@ -14,6 +14,7 @@ export const useModelStore = defineStore('model', () => {
   const isDirty = ref(false)
   const diagramRenameSignal = ref(null)  // { id, name } — replaced on each canvas-node rename
   const diagramDeleteSignal = ref(null)  // { id } — canvas node to remove when tree node is deleted
+  const pendingDeleteIds   = ref(new Set())  // tree-node ids deleted this session — used to filter renderDiagram
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
 
@@ -70,6 +71,7 @@ export const useModelStore = defineStore('model', () => {
     }
     if (model.value) removeFrom(model.value)
     if (selected.value?.id === id) selected.value = null
+    pendingDeleteIds.value.add(id)
     markDirty()
     diagramDeleteSignal.value = { id }
   }
@@ -143,6 +145,7 @@ export const useModelStore = defineStore('model', () => {
       const r = await fetch('/api/model/')
       model.value = migrateFolderTypes(await r.json())
       isDirty.value = false
+      pendingDeleteIds.value = new Set()
     } catch (e) {
       error.value = e.message
     } finally {
@@ -196,7 +199,7 @@ export const useModelStore = defineStore('model', () => {
       },
       body: JSON.stringify(model.value),
     })
-    if (r.ok) isDirty.value = false
+    if (r.ok) { isDirty.value = false; pendingDeleteIds.value = new Set() }
     return r.ok ? (await r.json()) : null
   }
 
@@ -271,7 +274,7 @@ export const useModelStore = defineStore('model', () => {
   }
 
   return {
-    model, selected, loading, error, filterQuery, editingNodeId, diagramRenameSignal, diagramDeleteSignal,
+    model, selected, loading, error, filterQuery, editingNodeId, diagramRenameSignal, diagramDeleteSignal, pendingDeleteIds,
     fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
     activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
     pendingOpenId,
