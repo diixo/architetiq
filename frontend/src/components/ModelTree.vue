@@ -45,7 +45,7 @@
         </Teleport>
         <ul class="tree ms-2 mt-1">
           <TreeNode
-            v-for="child in store.model.children"
+            v-for="child in store.model.children.filter(c => c.folder_type !== 'relations')"
             :key="child.id || child.name"
             :node="child"
           />

@@ -15,16 +15,7 @@
       "name": "Business",
       "type": "node",
       "folder_type": "business",
-      "children": [
-        {
-          "id": "f0dc01ea-a5db-4e51-961e-7d4a4970ecc0",
-          "name": "Business Function",
-          "type": "element",
-          "element_type": "BusinessFunction",
-          "documentation": "",
-          "children": []
-        }
-      ]
+      "children": []
     },
     {
       "id": "00000000-0000-0000-0001-000000000003",
