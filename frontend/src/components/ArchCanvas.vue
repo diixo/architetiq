@@ -745,9 +745,21 @@ function zoomIn()  { graph?.zoom(0.2) }
 function zoomOut() { graph?.zoom(-0.2) }
 function fitView() {
   if (!graph) return
-  graph.zoomToFit({ padding: 24 })
-  if (scrollWrapRef.value) { scrollWrapRef.value.scrollLeft = 0; scrollWrapRef.value.scrollTop = 0 }
-  _resizeGraph()
+  const cells = graph.getCells()
+  if (!cells.length) return
+  const bbox = graph.getCellsBBox(cells)
+  if (!bbox || bbox.width === 0) return
+  const wrap = scrollWrapRef.value
+  if (!wrap) return
+  const vw = wrap.clientWidth
+  const vh = wrap.clientHeight
+  const pad = 24
+  const scale = Math.min((vw - pad * 2) / bbox.width, (vh - pad * 2) / bbox.height, 1)
+  const tx = (vw - bbox.width  * scale) / 2 - bbox.x * scale
+  const ty = (vh - bbox.height * scale) / 2 - bbox.y * scale
+  graph.resize(vw, vh)
+  graph.zoomTo(scale)
+  graph.translate(tx, ty)
 }
 function resetZoom() {
   if (!graph) return
