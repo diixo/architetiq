@@ -56,6 +56,7 @@ html, body { height: 100%; margin: 0; }
 .tree-icon-view    { color: #0d6efd; font-size: 0.8rem;  flex-shrink: 0; }
 .tree-icon-element { color: #6c757d; font-size: 0.75rem; flex-shrink: 0; }
 .tree-icon-svg     { flex-shrink: 0; vertical-align: middle; overflow: visible; }
+.tree-icon-img     { flex-shrink: 0; vertical-align: middle; }
 
 .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-children { padding-left: 1rem; }
