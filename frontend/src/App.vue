@@ -75,7 +75,7 @@
             <li><a class="dropdown-item" href="#" @click.prevent="onLoadAspice">
               <i class="bi bi-box-seam me-1"></i>Open ASPICE
             </a></li>
-            <li><a class="dropdown-item" :class="{ 'fw-semibold': store.isDirty }" href="#" @click.prevent="onSave">Save</a></li>
+            <li><a class="dropdown-item" :class="{ 'fw-semibold text-warning': store.isDirty }" href="#" @click.prevent="onSave">Save</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="/api/model/export/" target="_blank">Export .archimate</a></li>
           </ul>

@@ -76,6 +76,7 @@ function openModelMenu(e) {
 function closeModelMenu() { modelMenu.visible = false }
 function onModelProperties() {
   store.selectNode(store.model)
+  store.propertiesPanelVisible = true
   closeModelMenu()
 }
 function onModelMenuOutside(e) {

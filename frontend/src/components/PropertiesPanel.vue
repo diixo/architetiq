@@ -137,6 +137,7 @@ watch(() => store.selected?.name, (name) => {
 
 function onNameInput() {
   nameUserInput.value = true
+  if (node.value) store.markDirty()
   saveName()
 }
 

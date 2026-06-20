@@ -129,6 +129,7 @@ export const useModelStore = defineStore('model', () => {
   }
 
   function migrateFolderTypes(m) {
+    if (!m.id) m.id = '00000000-0000-0000-0000-000000000000'
     ;(m.children || []).forEach((child, i) => {
       if (child.type !== 'node') return
       if (!child.folder_type && TOP_FOLDER_TYPES[child.name])

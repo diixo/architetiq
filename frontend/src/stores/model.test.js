@@ -353,6 +353,152 @@ describe('deleteNode', () => {
   })
 })
 
+// ── renameNode — model root ───────────────────────────────────────────────────
+
+describe('renameNode — model root', () => {
+  const ROOT_ID = '00000000-0000-0000-0000-000000000000'
+
+  beforeEach(() => {
+    const store = useModelStore()
+    store.model = { id: ROOT_ID, name: '*New Model', type: 'model', children: [] }
+  })
+
+  it('renames the model root and marks dirty', () => {
+    const store = useModelStore()
+    store.renameNode(ROOT_ID, 'My Project')
+    expect(store.model.name).toBe('My Project')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('does NOT set diagramRenameSignal for model root (not a canvas node)', () => {
+    const store = useModelStore()
+    store.renameNode(ROOT_ID, 'My Project')
+    expect(store.diagramRenameSignal).toBeNull()
+  })
+
+  it('ignores empty/whitespace name for model root', () => {
+    const store = useModelStore()
+    store.renameNode(ROOT_ID, '   ')
+    expect(store.model.name).toBe('*New Model')
+    expect(store.isDirty).toBe(false)
+  })
+
+  it('findById finds model root by its id', () => {
+    const store = useModelStore()
+    const found = store.findById(ROOT_ID)
+    expect(found).not.toBeNull()
+    expect(found.name).toBe('*New Model')
+    expect(found.type).toBe('model')
+  })
+})
+
+// ── updateDocumentation ────────────────────────────────────────────────────────
+
+describe('updateDocumentation', () => {
+  const ROOT_ID = '00000000-0000-0000-0000-000000000000'
+
+  beforeEach(() => {
+    const store = useModelStore()
+    store.model = {
+      id: ROOT_ID, name: 'M', type: 'model',
+      children: [{
+        id: 'f1', name: 'Business', type: 'node',
+        children: [
+          { id: 'e1', name: 'Actor', type: 'element', element_type: 'BusinessActor',
+            documentation: '', children: [] },
+        ]
+      }]
+    }
+  })
+
+  it('updates documentation on an element and marks dirty', () => {
+    const store = useModelStore()
+    store.updateDocumentation('e1', 'Main actor')
+    expect(store.findById('e1').documentation).toBe('Main actor')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('updates documentation on model root and marks dirty', () => {
+    const store = useModelStore()
+    store.updateDocumentation(ROOT_ID, 'Top-level model description')
+    expect(store.model.documentation).toBe('Top-level model description')
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('does nothing for unknown id', () => {
+    const store = useModelStore()
+    store.updateDocumentation('no-such-id', 'Ignored')
+    expect(store.isDirty).toBe(false)
+  })
+})
+
+// ── updateProperties ──────────────────────────────────────────────────────────
+
+describe('updateProperties', () => {
+  const ROOT_ID = '00000000-0000-0000-0000-000000000000'
+
+  beforeEach(() => {
+    const store = useModelStore()
+    store.model = {
+      id: ROOT_ID, name: 'M', type: 'model',
+      children: [{
+        id: 'f1', name: 'Business', type: 'node',
+        children: [
+          { id: 'e1', name: 'Actor', type: 'element', element_type: 'BusinessActor',
+            properties: [], children: [] },
+        ]
+      }]
+    }
+  })
+
+  it('updates properties on an element and marks dirty', () => {
+    const store = useModelStore()
+    store.updateProperties('e1', [{ key: 'owner', value: 'Alice' }])
+    expect(store.findById('e1').properties).toEqual([{ key: 'owner', value: 'Alice' }])
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('updates properties on model root and marks dirty', () => {
+    const store = useModelStore()
+    store.updateProperties(ROOT_ID, [{ key: 'version', value: '1.0' }])
+    expect(store.model.properties).toEqual([{ key: 'version', value: '1.0' }])
+    expect(store.isDirty).toBe(true)
+  })
+
+  it('does nothing for unknown id', () => {
+    const store = useModelStore()
+    store.updateProperties('no-such-id', [{ key: 'k', value: 'v' }])
+    expect(store.isDirty).toBe(false)
+  })
+})
+
+// ── migrateFolderTypes — root id ──────────────────────────────────────────────
+
+describe('migrateFolderTypes (via fetchModel)', () => {
+  it('fetchModel assigns canonical id to root when server returns id=""', async () => {
+    mockFetchOk({ name: 'ASPICE', type: 'model', id: '', children: [] })
+    const store = useModelStore()
+    await store.fetchModel()
+    expect(store.model.id).toBe('00000000-0000-0000-0000-000000000000')
+  })
+
+  it('fetchModel preserves existing root id', async () => {
+    mockFetchOk({ name: 'ASPICE', type: 'model', id: 'custom-root-id', children: [] })
+    const store = useModelStore()
+    await store.fetchModel()
+    expect(store.model.id).toBe('custom-root-id')
+  })
+
+  it('after fetchModel with id="", renameNode on root marks dirty', async () => {
+    mockFetchOk({ name: 'ASPICE', type: 'model', id: '', children: [] })
+    const store = useModelStore()
+    await store.fetchModel()
+    store.renameNode(store.model.id, 'New Name')
+    expect(store.model.name).toBe('New Name')
+    expect(store.isDirty).toBe(true)
+  })
+})
+
 // ── New does not touch server (integration) ───────────────────────────────────
 
 describe('New → Save workflow', () => {

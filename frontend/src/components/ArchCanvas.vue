@@ -7,7 +7,7 @@
         <!-- Save indicator + button -->
         <button
           class="btn btn-sm py-0 px-2"
-          :class="isDirty ? 'btn-warning fw-semibold' : 'btn-light border'"
+          :class="(isDirty || store.isDirty) ? 'btn-warning fw-semibold' : 'btn-light border'"
           title="Save"
           @click="saveAll"
         >

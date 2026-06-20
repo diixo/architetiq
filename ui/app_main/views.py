@@ -61,6 +61,8 @@ _FOLDER_TYPE_BY_NAME = {
 def _migrate_folder_types(model):
     """Add folder_type and id to top-level folders missing them."""
     import uuid as _uuid
+    if not model.get("id"):
+        model["id"] = "00000000-0000-0000-0000-000000000000"
     for i, child in enumerate(model.get("children", [])):
         if child.get("type") != "node":
             continue
