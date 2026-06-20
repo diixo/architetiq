@@ -94,9 +94,9 @@ const LAYERS = reactive([
   // 1. Relations
   { folder_type: 'relations', label: 'Relations',       open: true, types: REL_TYPES_PALETTE, isRelations: true },
   // 2. View extras
-  { folder_type: 'diagrams',  label: 'View',            open: true, types: ['Note','DiagramGroup','Connection'], connTypes: new Set(['Connection']) },
+  { folder_type: 'diagrams',  label: 'View',            open: true, types: ['Note','Connection'], connTypes: new Set(['Connection']) },
   // 3–10. ArchiMate layers
-  { folder_type: 'other',       label: 'Other',         open: true, types: ['Location','Grouping'] },
+  { folder_type: 'other',       label: 'Other',         open: true, types: ['Location','Grouping','DiagramGroup'] },
   { folder_type: 'strategy',    label: 'Strategy',      open: true, types: ['Resource','Capability','ValueStream','CourseOfAction'] },
   { folder_type: 'business',    label: 'Business',      open: true, types: ['BusinessActor','BusinessRole','BusinessCollaboration','BusinessInterface','BusinessProcess','BusinessFunction','BusinessInteraction','BusinessEvent','BusinessService','BusinessObject','Contract','Representation','Product'] },
   { folder_type: 'application', label: 'Application',   open: true, types: ['ApplicationComponent','ApplicationCollaboration','ApplicationInterface','ApplicationFunction','ApplicationInteraction','ApplicationProcess','ApplicationEvent','ApplicationService','DataObject'] },
