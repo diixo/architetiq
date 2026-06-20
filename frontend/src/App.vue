@@ -112,6 +112,20 @@
 
     </main>
 
+    <!-- Loading overlay -->
+    <div
+      v-if="appLoading"
+      class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+      style="background:rgba(0,0,0,0.45); z-index:10000;"
+    >
+      <div class="d-flex flex-column align-items-center gap-2 text-white">
+        <div class="spinner-border" role="status" style="width:2.5rem; height:2.5rem;">
+          <span class="visually-hidden">Loading…</span>
+        </div>
+        <div style="font-size:0.9rem;">{{ appLoadingMsg }}</div>
+      </div>
+    </div>
+
     <!-- Toast notification -->
     <div
       v-if="toast"
@@ -145,6 +159,8 @@ const fileInputRef = ref(null)
 const canvasRef = ref(null)
 const toast = ref('')
 let toastTimer = null
+const appLoading    = ref(false)
+const appLoadingMsg = ref('')
 
 function handleBeforeUnload(e) {
   if (store.isDirty) {
@@ -180,9 +196,15 @@ async function onNew() {
 }
 
 async function onLoadAspice() {
-  const ok = await store.loadAspice()
-  if (ok) showToast('ASPICE project loaded')
-  else showToast('ASPICE project not found')
+  appLoadingMsg.value = 'Loading ASPICE project…'
+  appLoading.value = true
+  try {
+    const ok = await store.loadAspice()
+    if (ok) showToast('ASPICE project loaded')
+    else showToast('ASPICE project not found')
+  } finally {
+    appLoading.value = false
+  }
 }
 
 async function onSave() {
