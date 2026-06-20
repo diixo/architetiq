@@ -83,6 +83,7 @@ import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
+import { computeElementAttrs } from '../archimate-element-resize.js'
 
 const _NHP = [[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]
 const _NHC = ['nw-resize','n-resize','ne-resize','e-resize','se-resize','s-resize','sw-resize','w-resize']
@@ -97,16 +98,20 @@ function _removeHandles() {
 function _applyNodeResize(node, w, h) {
   const data = node.getData() || {}
   if (data.type === 'element') {
-    node.attr('body/d', getElementPath(data.element_type, w, h))
+    const { iconX, iconY, textWrapW, textWrapH } = computeElementAttrs(data.element_type, w, h)
+    node.attr('body/d',        getElementPath(data.element_type, w, h))
+    node.attr('label/textWrap', { text: data.name || '', width: textWrapW, height: textWrapH, ellipsis: true })
+    node.attr('icon/x',        iconX)
+    node.attr('icon/y',        iconY)
   } else if (data.type === 'group') {
     const tabW = groupTabWidth(data.name || '', w)
-    node.attr({
-      body_fill: { width: w, height: Math.max(0, h - TAB_H) },
-      outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z` },
-    })
+    node.attr('body_fill/width',  w)
+    node.attr('body_fill/height', Math.max(0, h - TAB_H))
+    node.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z`)
   } else if (data.type === 'note') {
     const cut = 13
-    node.attr('body/d', `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`)
+    node.attr('body/d',        `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`)
+    node.attr('label/textWrap', { text: data.name || '', width: w - 8, height: h - 16, breakWord: false })
   }
 }
 
