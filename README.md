@@ -14,29 +14,9 @@ http://127.0.0.1:8000/django
 ```
 
 
-## Create repository structure
+### Functionality features:
 
-```bash
-django-admin startproject ui
-```
-
-```bash
-cd ui
-```
-
-```bash
-py manage.py startapp app_main
-```
-
-- DB migrations with migrates:
-```bash
-py ui/manage.py makemigrations
-py ui/manage.py migrate
-```
-
-* Strategy, Business, Application, Technology And Physical, Data, Motivation, Implementation and Migration, Requirement, Stakeholder, Viewpoint, View, Model, Catalog, Matrix, Diagram
-
-* Strategy, Business, Application, Technology And Physical, Motivation, Implementation and Migration, Other, Relations, Views ->
+* Strategy, Business, Application, Technology & Physical, Motivation, Implementation & Migration, Other, Relations, Views
 
 
 #### Acknowledgements
