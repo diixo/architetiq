@@ -27,13 +27,24 @@
       <div v-if="store.loading" class="text-muted p-2">Loading...</div>
       <div v-else-if="store.error" class="text-danger p-2">{{ store.error }}</div>
       <template v-else-if="store.model">
-        <b v-if="!store.filterQuery">
-          <a href="#" class="text-decoration-none text-dark"
-             @click.prevent="store.selectNode(store.model)"
-             @contextmenu.prevent="openModelMenu">
-            {{ store.model.name }}
-          </a>
-        </b>
+        <div
+          v-if="!store.filterQuery"
+          class="tree-label"
+          :class="{ 'fw-semibold': store.selected?.id === store.model?.id }"
+          @click="store.selectNode(store.model)"
+          @contextmenu.prevent="openModelMenu"
+          @mouseenter="rootHovered = true"
+          @mouseleave="rootHovered = false"
+        >
+          <i class="bi bi-dot tree-caret" style="color: transparent;"></i>
+          <i class="bi bi-database-fill" style="color: #6c757d; font-size: 0.8rem; flex-shrink: 0;"></i>
+          <span class="tree-name">{{ store.model.name }}</span>
+          <span v-if="rootHovered" class="tree-actions" @click.stop>
+            <button class="tree-action-btn" title="Properties" @click.stop="onModelProperties">
+              <i class="bi bi-sliders"></i>
+            </button>
+          </span>
+        </div>
 
         <Teleport to="body">
           <div v-if="modelMenu.visible" ref="modelMenuRef" class="tree-ctx-menu shadow"
@@ -61,9 +72,10 @@ import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
 import { useModelStore } from '../stores/model'
 import TreeNode from './TreeNode.vue'
 
-const store    = useModelStore()
-const searching = ref(false)
-const inputRef  = ref(null)
+const store      = useModelStore()
+const searching  = ref(false)
+const inputRef   = ref(null)
+const rootHovered = ref(false)
 
 const modelMenuRef = ref(null)
 const modelMenu = reactive({ visible: false, x: 0, y: 0 })
