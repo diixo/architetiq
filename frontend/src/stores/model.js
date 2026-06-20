@@ -13,6 +13,7 @@ export const useModelStore = defineStore('model', () => {
   const pendingOpenId   = ref(null)  // folder to expand before editing new child
   const isDirty = ref(false)
   const diagramRenameSignal = ref(null)  // { id, name } — replaced on each canvas-node rename
+  const diagramDeleteSignal = ref(null)  // { id } — canvas node to remove when tree node is deleted
   // Currently selected palette icon (type + value), null = normal pointer mode
   const activePaletteItem = ref(null)  // { kind: 'conn'|'elem', value: 'TypeName' }
 
@@ -39,9 +40,12 @@ export const useModelStore = defineStore('model', () => {
     const node = findById(id)
     if (node && newName.trim()) {
       node.name = newName.trim()
+      if (node.element_type === 'DiagramGroup') {
+        diagramRenameSignal.value = { id, name: newName.trim() }
+      }
       markDirty()
     } else if (newName.trim()) {
-      // Canvas-level node (DiagramGroup, Note) — not in model tree; signal watcher in ArchCanvas
+      // Canvas-level node not in model tree — signal watcher in ArchCanvas
       diagramRenameSignal.value = { id, name: newName.trim() }
       markDirty()
     }
@@ -67,6 +71,7 @@ export const useModelStore = defineStore('model', () => {
     if (model.value) removeFrom(model.value)
     if (selected.value?.id === id) selected.value = null
     markDirty()
+    diagramDeleteSignal.value = { id }
   }
 
   async function _addChild(parentId, newNode) {
@@ -97,12 +102,11 @@ export const useModelStore = defineStore('model', () => {
     markDirty()
   }
 
-  async function addElement(parentId, elementType) {
-    const id = genId()
+  async function addElement(parentId, elementType, opts = {}) {
+    const id   = opts.id   ?? genId()
+    const name = opts.name ?? elementType.replace(/([A-Z])/g, ' $1').trim()
     await _addChild(parentId, {
-      id,
-      name: elementType.replace(/([A-Z])/g, ' $1').trim(),
-      type: 'element', element_type: elementType,
+      id, name, type: 'element', element_type: elementType,
       documentation: '', children: [],
     })
     markDirty()
@@ -267,7 +271,7 @@ export const useModelStore = defineStore('model', () => {
   }
 
   return {
-    model, selected, loading, error, filterQuery, editingNodeId, diagramRenameSignal,
+    model, selected, loading, error, filterQuery, editingNodeId, diagramRenameSignal, diagramDeleteSignal,
     fetchModel, selectNode, findById, getNodePath, findFolderByType, isTopLevelNode, getTopFolderType,
     activeConnType, activePaletteItem, selectPaletteItem, resetPaletteSelection,
     pendingOpenId,

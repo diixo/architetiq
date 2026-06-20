@@ -202,6 +202,7 @@ const scrollWrapRef    = ref(null)
 const diagramData      = ref(null)
 const loading          = ref(false)
 let _loadSeq           = 0  // incremented on each loadDiagram/clearDiagram to cancel stale fetches
+let _clearing          = false  // true during programmatic clearCells — suppresses tree delete
 const isDirty          = ref(false)
 const currentViewId    = ref(null)
 let graph = null
@@ -228,6 +229,7 @@ function onCtxProperties() {
     selectNode(cell)
     const d = cell.getData()
     if (d?.element_id) store.selectNode(store.findById(d.element_id) || d)
+    else if (d?.id) store.selectNode(store.findById(d.id) || d)
     else store.selectNode(d)
   } else if (cell?.isEdge()) {
     selectEdge(cell)
@@ -501,7 +503,7 @@ function initGraph() {
     if (!d) return
     if (d.element_id) {
       store.selectNode(store.findById(d.element_id) || d)
-    } else if (d.type === 'view' && d.id) {
+    } else if (d.id) {
       store.selectNode(store.findById(d.id) || d)
     } else {
       store.selectNode(d)
@@ -520,7 +522,14 @@ function initGraph() {
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true; store.markDirty() })
   graph.on('node:resized', ({ node }) => { isDirty.value = true; store.markDirty() })
-  graph.on('node:removed',       () => { isDirty.value = true; store.markDirty() })
+  graph.on('node:removed', ({ node }) => {
+    isDirty.value = true
+    store.markDirty()
+    if (_clearing) return
+    const d = node.getData() || {}
+    const nodeId = d.element_id || d.id
+    if (nodeId) store.deleteNode(nodeId)
+  })
   graph.on('edge:connected',     ({ edge }) => applyConnTypeToEdge(edge))
   graph.on('edge:added',         ({ edge }) => {
     if (!edge.getData()?.isLoaded) { isDirty.value = true; store.markDirty() }
@@ -538,7 +547,9 @@ function initGraph() {
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderDiagram() {
   if (!graph || !diagramData.value) return
+  _clearing = true
   graph.clearCells()
+  _clearing = false
 
   const { nodes, edges } = diagramData.value
   const nodeIds = new Set(nodes.map(n => n.id))
@@ -926,8 +937,8 @@ function onDrop(e) {
     })
   }
 
-  // Add to model tree
-  store.addElement(store.findFolderByType(folderType)?.id, elementType)
+  // Add to model tree — same id as canvas node so delete/rename sync works
+  store.addElement(store.findFolderByType(folderType)?.id, elementType, { id, name })
   isDirty.value = true
 }
 
@@ -957,13 +968,29 @@ watch(() => store.diagramRenameSignal, (signal) => {
   if (!signal || !graph) return
   const xNode = graph.getCellById(signal.id)
   if (!xNode?.isNode()) return
+  const data = xNode.getData() || {}
   const { width, height } = xNode.getSize()
-  const tabW = groupTabWidth(signal.name, width)
-  xNode.setData({ ...xNode.getData(), name: signal.name })
-  xNode.attr('label/textWrap', { text: signal.name, width: tabW - 8, ellipsis: true })
-  xNode.attr('tab_fill/width', tabW)
-  xNode.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${width} V ${height} H 0 Z`)
+  xNode.setData({ ...data, name: signal.name })
+  if (data.type === 'group') {
+    const tabW = groupTabWidth(signal.name, width)
+    xNode.attr('label/textWrap', { text: signal.name, width: tabW - 8, ellipsis: true })
+    xNode.attr('tab_fill/width', tabW)
+    xNode.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${width} V ${height} H 0 Z`)
+  } else if (data.type === 'note') {
+    xNode.attr('label/textWrap', { text: signal.name, width: width - 8, height: height - 16, breakWord: false })
+  }
   isDirty.value = true
+})
+
+watch(() => store.diagramDeleteSignal, (signal) => {
+  if (!signal || !graph) return
+  const cell = graph.getCellById(signal.id)
+  if (cell) {
+    _clearing = true  // node:removed should not re-trigger deleteNode
+    graph.removeCell(cell)
+    _clearing = false
+    isDirty.value = true
+  }
 })
 
 watch(() => store.activePaletteItem, item => {
@@ -976,7 +1003,9 @@ function clearDiagram() {
   diagramData.value = null
   currentViewId.value = null
   isDirty.value = false
+  _clearing = true
   graph?.clearCells()
+  _clearing = false
 }
 
 async function saveCurrentDiagram() {

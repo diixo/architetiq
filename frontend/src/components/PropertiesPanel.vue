@@ -130,6 +130,11 @@ watch(node, (n) => {
   editProps.value = (n?.properties  ?? []).map(p => ({ ...p }))
 }, { immediate: true })
 
+// Keep name field in sync when an external rename (e.g. tree) mutates the same node object
+watch(() => store.selected?.name, (name) => {
+  if (!nameUserInput.value) editName.value = name ?? ''
+})
+
 function onNameInput() {
   nameUserInput.value = true
   saveName()
