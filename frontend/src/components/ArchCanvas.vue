@@ -85,11 +85,79 @@ import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
 
 const _NHP = [[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]
+const _NHC = ['nw-resize','n-resize','ne-resize','e-resize','se-resize','s-resize','sw-resize','w-resize']
 const _NHS = 7, _NHH = 3.5
 let _selHandlesEl = null
+let _resizeDrag = null
 
 function _removeHandles() {
   if (_selHandlesEl) { _selHandlesEl.remove(); _selHandlesEl = null }
+}
+
+function _applyNodeResize(node, w, h) {
+  const data = node.getData() || {}
+  if (data.type === 'element') {
+    node.attr('body/d', getElementPath(data.element_type, w, h))
+  } else if (data.type === 'group') {
+    const tabW = groupTabWidth(data.name || '', w)
+    node.attr({
+      body_fill: { width: w, height: Math.max(0, h - TAB_H) },
+      outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z` },
+    })
+  } else if (data.type === 'note') {
+    const cut = 13
+    node.attr('body/d', `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`)
+  }
+}
+
+function _updateHandlePositions(w, h) {
+  if (!_selHandlesEl) return
+  const ch = _selHandlesEl.children
+  ch[0].setAttribute('width',  String(w + 2))
+  ch[0].setAttribute('height', String(h + 2))
+  _NHP.forEach(([rx, ry], i) => {
+    ch[i + 1].setAttribute('x', String(rx * w - _NHH))
+    ch[i + 1].setAttribute('y', String(ry * h - _NHH))
+  })
+}
+
+function _startResize(e, node, rx, ry) {
+  e.preventDefault()
+  e.stopPropagation()
+  const rect  = containerRef.value.getBoundingClientRect()
+  const scale = graph.zoom()
+  const trs   = graph.translate()
+  const toGraph = (cx, cy) => ({ x: (cx - rect.left - trs.tx) / scale, y: (cy - rect.top - trs.ty) / scale })
+  const m0 = toGraph(e.clientX, e.clientY)
+  const p0 = node.getPosition()
+  const s0 = node.getSize()
+  const MIN_W = 40, MIN_H = 30
+
+  const onMove = (me) => {
+    const m = toGraph(me.clientX, me.clientY)
+    const dx = m.x - m0.x, dy = m.y - m0.y
+    let { x, y } = p0
+    let w = s0.width, h = s0.height
+    if (rx === 0) { w = s0.width - dx;  x = p0.x + dx }
+    if (rx === 1) { w = s0.width + dx }
+    if (ry === 0) { h = s0.height - dy; y = p0.y + dy }
+    if (ry === 1) { h = s0.height + dy }
+    if (w < MIN_W) { w = MIN_W; if (rx === 0) x = p0.x + s0.width - MIN_W }
+    if (h < MIN_H) { h = MIN_H; if (ry === 0) y = p0.y + s0.height - MIN_H }
+    node.setSize({ width: w, height: h })
+    node.setPosition({ x, y })
+    _applyNodeResize(node, w, h)
+    _updateHandlePositions(w, h)
+  }
+  const onUp = () => {
+    if (_resizeDrag) { isDirty.value = true; store.markDirty() }
+    _resizeDrag = null
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup',   onUp)
+  }
+  _resizeDrag = { node }
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup',   onUp)
 }
 
 function _addHandles(node) {
@@ -98,23 +166,23 @@ function _addHandles(node) {
   if (!view) return
   const { width, height } = node.getSize()
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-  g.setAttribute('style', 'pointer-events:none;')
-  // dashed bounding rectangle — inline style ensures fill:none is never overridden by CSS
+  // dashed bounding rectangle
   const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
   box.setAttribute('x', '-1')
   box.setAttribute('y', '-1')
   box.setAttribute('width',  String(width  + 2))
   box.setAttribute('height', String(height + 2))
-  box.setAttribute('style', 'fill:none;stroke:#0d6efd;stroke-width:1.5;stroke-dasharray:5 3;')
+  box.setAttribute('style', 'fill:none;stroke:#0d6efd;stroke-width:1.5;stroke-dasharray:5 3;pointer-events:none;')
   g.appendChild(box)
-  // 8 handle squares at corners + midpoints
-  _NHP.forEach(([rx, ry]) => {
+  // 8 handle squares — interactive resize
+  _NHP.forEach(([rx, ry], i) => {
     const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
     r.setAttribute('x',      String(rx * width  - _NHH))
     r.setAttribute('y',      String(ry * height - _NHH))
     r.setAttribute('width',  String(_NHS))
     r.setAttribute('height', String(_NHS))
-    r.setAttribute('style', 'fill:#0d6efd;stroke:#fff;stroke-width:1;')
+    r.setAttribute('style', `fill:#0d6efd;stroke:#fff;stroke-width:1;cursor:${_NHC[i]};`)
+    r.addEventListener('mousedown', (e) => _startResize(e, node, rx, ry))
     g.appendChild(r)
   })
   const container = view.container ?? view.el
@@ -445,7 +513,7 @@ function initGraph() {
 
   // Mark dirty on any structural change
   graph.on('node:moved',         () => { isDirty.value = true; store.markDirty() })
-  graph.on('node:resized',       () => { isDirty.value = true; store.markDirty() })
+  graph.on('node:resized', ({ node }) => { isDirty.value = true; store.markDirty() })
   graph.on('node:removed',       () => { isDirty.value = true; store.markDirty() })
   graph.on('edge:connected',     ({ edge }) => applyConnTypeToEdge(edge))
   graph.on('edge:added',         ({ edge }) => {
