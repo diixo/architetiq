@@ -358,7 +358,7 @@ const TAB_H = 18  // GroupFigure.java TOPBAR_HEIGHT = 18
 // Matches GroupFigure.java: base = width/2, expand to textWidth+8 if needed, cap at full width
 function groupTabWidth(name, groupWidth) {
   const base = Math.floor(groupWidth / 2)
-  const textW = Math.round((name || '').length * 7)  // ~7px per char at 11px bold
+  const textW = Math.round((name || '').length * 6)  // ~6px per char at 11px normal
   return Math.min(Math.max(base, textW + 8), groupWidth)
 }
 
@@ -506,11 +506,12 @@ function renderDiagram() {
           },
           label: {
             text: n.name,
-            x: 4, y: TAB_H - 8,
+            x: 4, y: TAB_H - 7,
+            refX: 0, refY: 0,
             textAnchor: 'start',
-            fontSize: 11, fontWeight: 600,
+            fontSize: 11, fontWeight: 400,
             fill: labelColor(fillColor),
-            textWrap: { text: n.name, width: n.width - 8, ellipsis: true },
+            textWrap: { text: n.name, width: tabW - 8, ellipsis: true },
           },
         },
       })
@@ -810,10 +811,11 @@ function onDrop(e) {
                      fill: darkenColor(fillColor), stroke: 'none' },
         outline:   { d: `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z`,
                      fill: 'none', stroke: '#999', strokeWidth: 1 },
-        label:     { text: name, x: 4, y: TAB_H - 8,
+        label:     { text: name, x: 4, y: TAB_H - 7,
+                     refX: 0, refY: 0,
                      textAnchor: 'start',
-                     fontSize: 11, fontWeight: 600, fill: labelColor(fillColor),
-                     textWrap: { text: name, width: w - 8, ellipsis: true } },
+                     fontSize: 11, fontWeight: 400, fill: labelColor(fillColor),
+                     textWrap: { text: name, width: tabW - 8, ellipsis: true } },
       },
     })
   } else {
@@ -870,7 +872,7 @@ watch(() => store.diagramRenameSignal, (signal) => {
   const { width, height } = xNode.getSize()
   const tabW = groupTabWidth(signal.name, width)
   xNode.setData({ ...xNode.getData(), name: signal.name })
-  xNode.attr('label/textWrap', { text: signal.name, width: width - 8, ellipsis: true })
+  xNode.attr('label/textWrap', { text: signal.name, width: tabW - 8, ellipsis: true })
   xNode.attr('tab_fill/width', tabW)
   xNode.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${width} V ${height} H 0 Z`)
   isDirty.value = true
