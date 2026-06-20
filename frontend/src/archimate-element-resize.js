@@ -14,6 +14,29 @@ const SHAPE_TYPE = {
   WorkPackage:'rounded', Capability:'rounded', CourseOfAction:'rounded', ValueStream:'rounded',
 }
 
+export const TAB_H = 18  // GroupFigure.java TOPBAR_HEIGHT = 18
+
+// Matches GroupFigure.java: base = width/2, expand to textWidth+8 if needed, cap at full width
+export function groupTabWidth(name, groupWidth) {
+  const base = Math.floor(groupWidth / 2)
+  const textW = Math.round((name || '').length * 6)
+  return Math.min(Math.max(base, textW + 8), groupWidth)
+}
+
+/**
+ * Compute DiagramGroup attrs for a given size.
+ * Pure function — no X6 dependency.
+ */
+export function computeGroupAttrs(name, w, h) {
+  const tabW = groupTabWidth(name, w)
+  return {
+    tabW,
+    bodyFillW:  w,
+    bodyFillH:  Math.max(0, h - TAB_H),
+    outlineD:   `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z`,
+  }
+}
+
 /**
  * Compute element body + icon + label attrs for a given size.
  * Pure function — no X6 dependency.

@@ -83,7 +83,7 @@ import { useModelStore } from '../stores/model'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 import { humanizeType } from '../archimate-folder-elements.js'
 import { nodeColor } from '../archimate-styles.js'
-import { computeElementAttrs } from '../archimate-element-resize.js'
+import { computeElementAttrs, computeGroupAttrs } from '../archimate-element-resize.js'
 
 const _NHP = [[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]
 const _NHC = ['nw-resize','n-resize','ne-resize','e-resize','se-resize','s-resize','sw-resize','w-resize']
@@ -104,10 +104,11 @@ function _applyNodeResize(node, w, h) {
     node.attr('icon/x',        iconX)
     node.attr('icon/y',        iconY)
   } else if (data.type === 'group') {
-    const tabW = groupTabWidth(data.name || '', w)
-    node.attr('body_fill/width',  w)
-    node.attr('body_fill/height', Math.max(0, h - TAB_H))
-    node.attr('outline/d', `M 0,${TAB_H} L 0,0 H ${tabW} V ${TAB_H} M 0,${TAB_H} H ${w} V ${h} H 0 Z`)
+    const { tabW, bodyFillW, bodyFillH, outlineD } = computeGroupAttrs(data.name || '', w, h)
+    node.attr('body_fill/width',  bodyFillW)
+    node.attr('body_fill/height', bodyFillH)
+    node.attr('tab_fill/width',   tabW)
+    node.attr('outline/d',        outlineD)
   } else if (data.type === 'note') {
     const cut = 13
     node.attr('body/d',        `M 0,0 H ${w} V ${h - cut} L ${w - cut},${h} H 0 Z`)
