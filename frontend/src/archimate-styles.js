@@ -10,14 +10,14 @@ export const LAYER_COLOR = {
   ApplicationInterface:'#b5ffff', ApplicationFunction:'#b5ffff',
   ApplicationInteraction:'#b5ffff', ApplicationProcess:'#b5ffff',
   ApplicationEvent:'#b5ffff', ApplicationService:'#b5ffff', DataObject:'#b5ffff',
-  // Technology (pale green  #b5ffb5)
-  Node:'#b5ffb5', Device:'#b5ffb5', SystemSoftware:'#b5ffb5',
-  TechnologyCollaboration:'#b5ffb5', TechnologyInterface:'#b5ffb5',
-  TechnologyFunction:'#b5ffb5', TechnologyInteraction:'#b5ffb5',
-  TechnologyProcess:'#b5ffb5', TechnologyEvent:'#b5ffb5',
-  TechnologyService:'#b5ffb5', Artifact:'#b5ffb5',
-  CommunicationNetwork:'#b5ffb5', Path:'#b5ffb5',
-  Equipment:'#b5ffb5', Facility:'#b5ffb5', Material:'#b5ffb5',
+  // Technology (pale green  #c9e7b7)
+  Node:'#c9e7b7', Device:'#c9e7b7', SystemSoftware:'#c9e7b7',
+  TechnologyCollaboration:'#c9e7b7', TechnologyInterface:'#c9e7b7',
+  TechnologyFunction:'#c9e7b7', TechnologyInteraction:'#c9e7b7',
+  TechnologyProcess:'#c9e7b7', TechnologyEvent:'#c9e7b7',
+  TechnologyService:'#c9e7b7', Artifact:'#c9e7b7',
+  CommunicationNetwork:'#c9e7b7', Path:'#c9e7b7',
+  Equipment:'#c9e7b7', Facility:'#c9e7b7', Material:'#c9e7b7',
   // Motivation (pale blue-purple  #ccccff)
   Stakeholder:'#ccccff', Driver:'#ccccff', Assessment:'#ccccff',
   Goal:'#ccccff', Outcome:'#ccccff', Principle:'#ccccff',
@@ -30,7 +30,7 @@ export const LAYER_COLOR = {
   // Other
   Location:'#edcfe2', Grouping:'#ffffff',
   // Physical
-  DistributionNetwork:'#b5ffb5',
+  DistributionNetwork:'#c9e7b7',
   // Relations (light gray background)
   AssociationRelationship:'#f8f9fa', CompositionRelationship:'#f8f9fa',
   AggregationRelationship:'#f8f9fa', AssignmentRelationship:'#f8f9fa',

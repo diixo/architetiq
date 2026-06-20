@@ -544,6 +544,7 @@ function renderDiagram() {
           },
           icon: iconId && iconX > 0 ? {
             href: `#${iconId}`, x: iconX, y: iconY, width: iconSize, height: iconSize,
+            style: '--am-fill:none;color:#555',
           } : { width: 0, height: 0 },
         },
       })
@@ -832,7 +833,8 @@ function onDrop(e) {
         label: { text: name, fontSize: 10, fill: '#222',
                  refX: '50%', refY: '50%', textAnchor: 'middle', textVerticalAnchor: 'middle',
                  textWrap: { text: name, width: w - (iconId ? iconSize + 6 : 8), height: h - 8, ellipsis: true } },
-        icon: iconId ? { href: `#${iconId}`, x: w - iconSize - 2, y: 2, width: iconSize, height: iconSize }
+        icon: iconId ? { href: `#${iconId}`, x: w - iconSize - 2, y: 2, width: iconSize, height: iconSize,
+                         style: '--am-fill:none;color:#555' }
                      : { width: 0, height: 0 },
       },
     })

@@ -12,10 +12,14 @@
       <i v-if="node.type === 'node'" class="bi bi-folder-fill tree-icon-folder"></i>
       <i v-else-if="node.type === 'view'" class="bi bi-diagram-3 tree-icon-view"></i>
       <template v-else>
-        <svg v-if="elementIconId" width="13" height="13" class="tree-icon-svg">
-          <use :href="`#${elementIconId}`" width="13" height="13"/>
+        <svg width="14" height="14" class="tree-icon-svg">
+          <use v-if="elementIconId"
+               :href="`#${elementIconId}`"
+               width="14" height="14"
+               :style="`--am-fill:${elementBgColor};color:#222`"/>
+          <rect v-else width="14" height="14" rx="2"
+                :fill="elementBgColor" stroke="#aaa" stroke-width="0.5"/>
         </svg>
-        <i v-else class="bi bi-box tree-icon-element"></i>
       </template>
 
       <!-- Inline edit input -->
@@ -87,6 +91,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useModelStore } from '../stores/model'
 import TreeContextMenu from './TreeContextMenu.vue'
 import { ELEMENT_ICON } from '../archimate-icons.js'
+import { LAYER_COLOR } from '../archimate-styles.js'
 
 const props = defineProps({
   node:   { type: Object,  required: true },
@@ -99,7 +104,8 @@ const isEditing    = ref(false)
 
 // Top-level folders (direct children of model root) are protected — cannot rename or delete
 const isProtected      = computed(() => store.isTopLevelNode(props.node.id))
-const elementIconId    = computed(() => ELEMENT_ICON[props.node.element_type] ?? null)
+const elementIconId  = computed(() => ELEMENT_ICON[props.node.element_type] ?? null)
+const elementBgColor = computed(() => LAYER_COLOR[props.node.element_type] ?? '#f0f0f0')
 const editValue    = ref('')
 const editInputRef = ref(null)
 const isOpen       = ref(false)
