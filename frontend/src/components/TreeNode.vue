@@ -13,9 +13,9 @@
       <i v-else-if="node.type === 'view'" class="bi bi-diagram-3 tree-icon-view"></i>
       <template v-else>
         <svg v-if="elementIconId" width="13" height="13" class="tree-icon-svg">
-          <use :href="`#${elementIconId}`"/>
+          <use :href="`#${elementIconId}`" width="13" height="13"/>
         </svg>
-        <i v-else :class="['bi', elementFallbackIcon, 'tree-icon-element']"></i>
+        <i v-else class="bi bi-box tree-icon-element"></i>
       </template>
 
       <!-- Inline edit input -->
@@ -88,11 +88,6 @@ import { useModelStore } from '../stores/model'
 import TreeContextMenu from './TreeContextMenu.vue'
 import { ELEMENT_ICON } from '../archimate-icons.js'
 
-const TREE_FALLBACK_ICON = {
-  DiagramGroup: 'bi-collection',
-  Note:         'bi-sticky',
-}
-
 const props = defineProps({
   node:   { type: Object,  required: true },
   isRoot: { type: Boolean, default: false },
@@ -105,7 +100,6 @@ const isEditing    = ref(false)
 // Top-level folders (direct children of model root) are protected — cannot rename or delete
 const isProtected      = computed(() => store.isTopLevelNode(props.node.id))
 const elementIconId    = computed(() => ELEMENT_ICON[props.node.element_type] ?? null)
-const elementFallbackIcon = computed(() => TREE_FALLBACK_ICON[props.node.element_type] ?? 'bi-box')
 const editValue    = ref('')
 const editInputRef = ref(null)
 const isOpen       = ref(false)
