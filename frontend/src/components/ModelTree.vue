@@ -37,9 +37,7 @@
           @mouseleave="rootHovered = false"
         >
           <i class="bi bi-dot tree-caret" style="color: transparent;"></i>
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;background:#0091da;flex-shrink:0;">
-            <i class="bi bi-diagram-3" style="color:#fff;font-size:11px;"></i>
-          </span>
+          <i class="bi bi-diagram-3-fill" style="color:#0091da;font-size:14px;flex-shrink:0;"></i>
           <span class="tree-name">{{ store.model.name }}</span>
           <span v-if="rootHovered" class="tree-actions" @click.stop>
             <button class="tree-action-btn" title="Properties" @click.stop="onModelProperties">
